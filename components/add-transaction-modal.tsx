@@ -38,6 +38,7 @@ export function AddTransactionModal() {
 
   const { addTransaction, categories } = useTransactions()
   const { symbol, convertToINR, currency } = useCurrency()
+  const availableCategories = categories.includes("Transfer") ? categories : [...categories, "Transfer"]
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -88,7 +89,7 @@ export function AddTransactionModal() {
           <PlusCircle className="mr-2 h-4 w-4 text-[#ccff00]" /> Add New Transaction
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[425px] bg-white text-black border border-black/5 rounded-3xl shadow-2xl p-6">
+      <DialogContent className="sm:max-w-[425px] w-[calc(100%-2rem)] sm:w-full max-h-[calc(100vh-2rem)] sm:max-h-[90vh] overflow-y-auto bg-white text-black border border-black/5 rounded-3xl shadow-2xl p-6">
         <DialogHeader>
           <DialogTitle className="text-lg font-black text-black">Add New Transaction</DialogTitle>
           <DialogDescription className="text-xs text-black/60 font-medium">
@@ -137,7 +138,7 @@ export function AddTransactionModal() {
                   <SelectValue placeholder="Select a category" />
                 </SelectTrigger>
                 <SelectContent className="bg-white text-black border border-black/5 rounded-xl shadow-xl z-[999]">
-                  {categories.map((cat) => (
+                  {availableCategories.map((cat) => (
                     <SelectItem key={cat} value={cat} className="hover:bg-black/5 focus:bg-black/5 cursor-pointer font-semibold text-xs py-2 px-3">
                       {cat}
                     </SelectItem>

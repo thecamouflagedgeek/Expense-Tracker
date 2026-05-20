@@ -6,7 +6,7 @@ import { ToastProvider, ToastViewport } from "@/components/ui/toast"
 import { useToast } from "@/hooks/use-toast" // Assuming this is a shadcn/ui toast hook
 import { cn } from "@/lib/utils"
 
-export type NotificationType = "success" | "error" | "info"
+export type NotificationType = "success" | "error" | "info" | "warning"
 
 export type Notification = {
   id: number
@@ -14,8 +14,10 @@ export type Notification = {
   type: NotificationType
 }
 
+type NotificationInput = Omit<Notification, "id"> & { id?: number }
+
 type NotificationContextType = {
-  addNotification: (notification: Omit<Notification, "id">) => void
+  addNotification: (notification: NotificationInput) => void
 }
 
 export const NotificationContext = createContext<NotificationContextType | undefined>(undefined)
@@ -25,8 +27,8 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
   const { toast } = useToast()
 
   const addNotification = useCallback(
-    (notification: Omit<Notification, "id">) => {
-      const newNotification = { id: Date.now(), ...notification }
+    (notification: NotificationInput) => {
+      const newNotification = { id: notification.id ?? Date.now(), ...notification }
       setNotifications((prev) => [...prev, newNotification])
 
       toast({
@@ -38,6 +40,7 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
           notification.type === "success" && "bg-green-900/20 border-green-700 text-green-400",
           notification.type === "error" && "bg-red-900/20 border-red-700 text-red-400",
           notification.type === "info" && "bg-blue-900/20 border-blue-700 text-blue-400",
+          notification.type === "warning" && "bg-yellow-900/20 border-yellow-700 text-yellow-400",
         ),
       })
     },

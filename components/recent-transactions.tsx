@@ -11,7 +11,7 @@ import {
   Home, 
   Wallet,
   CreditCard,
-  ArrowDownRight,
+  ArrowLeftRight,
   TrendingDown
 } from "lucide-react"
 import Link from "next/link"
@@ -21,7 +21,9 @@ export function RecentTransactions() {
   const { transactions, loading, error } = useTransactions()
   const { format } = useCurrency()
 
-  const recentTransactions = transactions.slice(0, 5) // Get top 5 recent transactions
+  const recentTransactions = [...transactions]
+    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+    .slice(0, 5)
 
   // Helper to get custom brand styles and icons
   const getBrandDetails = (title: string, category: string) => {
@@ -57,6 +59,14 @@ export function RecentTransactions() {
         bgColor: "bg-[#EA4C89]/8 text-[#EA4C89] border-[#EA4C89]/15",
         brandName: "Dribbble",
         subtext: "Pro Subscription"
+      }
+    }
+    if (category.toLowerCase() === "transfer" || lowerTitle.includes("transfer")) {
+      return {
+        icon: <ArrowLeftRight className="w-5 h-5" />,
+        bgColor: "bg-emerald-500/10 text-emerald-600 border-emerald-500/20",
+        brandName: title,
+        subtext: "Quick Transfer"
       }
     }
 
@@ -101,8 +111,9 @@ export function RecentTransactions() {
             {recentTransactions.map((transaction) => {
               const brand = getBrandDetails(transaction.title, transaction.category)
               return (
-                <div 
-                  key={transaction.id} 
+                <Link
+                  key={transaction.id}
+                  href="/transactions"
                   className="flex items-center justify-between p-3 rounded-2xl hover:bg-black/[0.02] border border-transparent hover:border-black/[0.03] transition-all duration-200"
                 >
                   <div className="flex items-center gap-3.5">
@@ -134,7 +145,7 @@ export function RecentTransactions() {
                       <TrendingDown className="w-2.5 h-2.5 text-red-500" /> Expense
                     </span>
                   </div>
-                </div>
+                </Link>
               )
             })}
           </div>

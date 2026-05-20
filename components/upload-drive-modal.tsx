@@ -18,8 +18,9 @@ import { Label } from "@/components/ui/label"
 import { Loader2, FolderUp } from "lucide-react"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { useAuth } from "@/contexts/auth-context"
-import { uploadFileToDrive } from "@/lib/google-drive"
 import { useNotification } from "@/contexts/notification-context"
+
+const LOCAL_STORAGE_DRIVE_UPLOADS_KEY = "ctrlfund_drive_uploads"
 
 export function UploadDriveModal() {
   const [isOpen, setIsOpen] = useState(false)
@@ -56,10 +57,27 @@ export function UploadDriveModal() {
     }
 
     try {
-      await uploadFileToDrive(file, folderName, user.accessToken as string)
+      const fileData = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader()
+        reader.onload = () => resolve(reader.result as string)
+        reader.onerror = reject
+        reader.readAsDataURL(file)
+      })
+
+      const existingUploads = JSON.parse(localStorage.getItem(LOCAL_STORAGE_DRIVE_UPLOADS_KEY) || "[]")
+      const newUpload = {
+        id: crypto.randomUUID(),
+        userId: user.id,
+        fileName: file.name,
+        fileType: file.type,
+        fileSize: file.size,
+        folderName,
+        uploadedAt: new Date().toISOString(),
+        fileData,
+      }
+      localStorage.setItem(LOCAL_STORAGE_DRIVE_UPLOADS_KEY, JSON.stringify([...existingUploads, newUpload]))
       addNotification({
-        id: Date.now(),
-        message: `File "${file.name}" uploaded to Google Drive successfully!`,
+        message: `File "${file.name}" saved to Drive queue locally.`,
         type: "success",
       })
       setIsOpen(false)
@@ -69,8 +87,7 @@ export function UploadDriveModal() {
       console.error("Error uploading to Google Drive:", err)
       setError(err.message || "Failed to upload file to Google Drive.")
       addNotification({
-        id: Date.now(),
-        message: `Failed to upload to Google Drive: ${err.message}`,
+        message: `Failed to upload to Drive queue: ${err.message}`,
         type: "error",
       })
     } finally {
@@ -85,11 +102,11 @@ export function UploadDriveModal() {
           <FolderUp className="mr-2 h-4 w-4 text-[#ccff00]" /> Upload to Drive
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[425px] bg-white text-black border border-black/5 rounded-3xl shadow-2xl p-6">
+      <DialogContent className="sm:max-w-[425px] w-[calc(100%-2rem)] sm:w-full max-h-[calc(100vh-2rem)] sm:max-h-[90vh] overflow-y-auto bg-white text-black border border-black/5 rounded-3xl shadow-2xl p-6">
         <DialogHeader>
           <DialogTitle className="text-lg font-black text-black">Upload to Google Drive</DialogTitle>
           <DialogDescription className="text-xs text-black/60 font-medium">
-            Upload a file directly to your Google Drive.
+            Queue a file for Drive upload (stored locally for now).
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit}>

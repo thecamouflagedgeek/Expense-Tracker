@@ -17,6 +17,8 @@ export function TransactionList({ transactions }: TransactionListProps) {
   const { permissions } = useRole()
   const { updateTransaction } = useTransactions()
   const [archivingItemId, setArchivingItemId] = useState<string | null>(null)
+  const showActions =
+    permissions.canEditTransactions || permissions.canDeleteTransactions || permissions.canArchiveTransactions
 
   const handleArchive = async (id: string, currentStatus: boolean) => {
     if (!permissions.canArchiveTransactions) {
@@ -48,21 +50,23 @@ export function TransactionList({ transactions }: TransactionListProps) {
         <CardTitle className="text-base font-bold text-black tracking-tight">All Transactions</CardTitle>
       </CardHeader>
       <CardContent className="p-0">
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto max-h-[520px] overflow-y-auto">
           <Table>
-            <TableHeader>
+            <TableHeader className="sticky top-0 z-10 bg-[#eff1e9]">
               <TableRow className="border-black/5 hover:bg-transparent">
                 <TableHead className="text-black/45 font-bold text-[10px] uppercase tracking-wider">Title</TableHead>
                 <TableHead className="text-black/45 font-bold text-[10px] uppercase tracking-wider">Description</TableHead>
                 <TableHead className="text-black/45 font-bold text-[10px] uppercase tracking-wider">Category</TableHead>
                 <TableHead className="text-black/45 font-bold text-[10px] uppercase tracking-wider">Amount</TableHead>
                 <TableHead className="text-black/45 font-bold text-[10px] uppercase tracking-wider">Date</TableHead>
-                <TableHead className="text-black/45 font-bold text-[10px] uppercase tracking-wider text-right">Actions</TableHead>
+                {showActions && (
+                  <TableHead className="text-black/45 font-bold text-[10px] uppercase tracking-wider text-right">Actions</TableHead>
+                )}
               </TableRow>
             </TableHeader>
             <TableBody>
               {transactions.map((transaction) => (
-                <TransactionItem key={transaction.id} transaction={transaction}>
+                <TransactionItem key={transaction.id} transaction={transaction} showActions={showActions}>
                   {permissions.canArchiveTransactions && (
                     <Button
                       variant="ghost"

@@ -10,6 +10,7 @@ import { AddTransactionModal } from "@/components/add-transaction-modal"
 import { BulkAddModal } from "@/components/bulk-add-modal"
 import { ReceiptUploadModal } from "@/components/receipt-upload-modal"
 import { UploadDriveModal } from "@/components/upload-drive-modal"
+import { ReceiptsPanel } from "@/components/receipts-panel"
 import { exportTransactionsToExcel, exportTransactionsToCSV } from "@/utils/export-utils"
 import { generateTransactionsPdf } from "@/utils/pdf-utils"
 import { useRole } from "@/contexts/role-context"
@@ -35,12 +36,26 @@ export default function TransactionsPage() {
 
   const tab = useMemo<"transactions" | "receipts">(() => {
     const t = search.get("tab")
-    return t === "receipts" ? "receipts" : "transactions"
+    if (t === "receipts" && permissions.canViewReceipts) {
+      return "receipts"
+    }
+    return "transactions"
+  }, [search, permissions.canViewReceipts])
+
+  const view = useMemo<"active" | "archived">(() => {
+    const v = search.get("view")
+    return v === "archived" ? "archived" : "active"
   }, [search])
 
   const setTab = (next: "transactions" | "receipts") => {
     const p = new URLSearchParams(search.toString())
     p.set("tab", next)
+    router.replace(`/transactions?${p.toString()}`)
+  }
+
+  const setView = (next: "active" | "archived") => {
+    const p = new URLSearchParams(search.toString())
+    p.set("view", next)
     router.replace(`/transactions?${p.toString()}`)
   }
 
@@ -56,7 +71,7 @@ export default function TransactionsPage() {
   }
 
   const filteredTransactions = useMemo(() => {
-    let filtered = transactions
+    let filtered = transactions.filter((t) => Boolean(t.isArchived) === (view === "archived"))
 
     if (filters.search) {
       filtered = filtered.filter(
@@ -79,7 +94,7 @@ export default function TransactionsPage() {
     }
 
     return filtered
-  }, [transactions, filters])
+  }, [transactions, filters, view])
 
   const handleExportExcel = () => {
     exportTransactionsToExcel(filteredTransactions, format)
@@ -186,27 +201,51 @@ export default function TransactionsPage() {
       </div>
 
       {/* Modern Pill Tabs */}
-      <div className="flex bg-white/70 p-1.5 rounded-full border border-black/5 shadow-sm self-start mb-6 w-fit">
-        <button
-          onClick={() => setTab("transactions")}
-          className={`px-5 py-2 rounded-full text-xs font-black transition-all duration-200 ${
-            tab === "transactions" 
-              ? "bg-black text-[#ccff00] shadow-sm" 
-              : "text-black/50 hover:text-black"
-          }`}
-        >
-          Transactions
-        </button>
-        <button
-          onClick={() => setTab("receipts")}
-          className={`px-5 py-2 rounded-full text-xs font-black transition-all duration-200 ${
-            tab === "receipts" 
-              ? "bg-black text-[#ccff00] shadow-sm" 
-              : "text-black/50 hover:text-black"
-          }`}
-        >
-          Receipts
-        </button>
+      <div className="flex flex-col md:flex-row md:items-center gap-3 mb-6">
+        <div className="flex bg-white/70 p-1.5 rounded-full border border-black/5 shadow-sm self-start w-fit">
+          <button
+            onClick={() => setTab("transactions")}
+            className={`px-5 py-2 rounded-full text-xs font-black transition-all duration-200 ${
+              tab === "transactions" 
+                ? "bg-black text-[#ccff00] shadow-sm" 
+                : "text-black/50 hover:text-black"
+            }`}
+          >
+            Transactions
+          </button>
+          {permissions.canViewReceipts && (
+            <button
+              onClick={() => setTab("receipts")}
+              className={`px-5 py-2 rounded-full text-xs font-black transition-all duration-200 ${
+                tab === "receipts" 
+                  ? "bg-black text-[#ccff00] shadow-sm" 
+                  : "text-black/50 hover:text-black"
+              }`}
+            >
+              Receipts
+            </button>
+          )}
+        </div>
+        {tab === "transactions" && (
+          <div className="flex bg-white/70 p-1.5 rounded-full border border-black/5 shadow-sm self-start w-fit">
+            <button
+              onClick={() => setView("active")}
+              className={`px-5 py-2 rounded-full text-xs font-black transition-all duration-200 ${
+                view === "active" ? "bg-black text-[#ccff00] shadow-sm" : "text-black/50 hover:text-black"
+              }`}
+            >
+              Active
+            </button>
+            <button
+              onClick={() => setView("archived")}
+              className={`px-5 py-2 rounded-full text-xs font-black transition-all duration-200 ${
+                view === "archived" ? "bg-black text-[#ccff00] shadow-sm" : "text-black/50 hover:text-black"
+              }`}
+            >
+              Archived
+            </button>
+          </div>
+        )}
       </div>
 
       {(!permissions.canEditTransactions || !permissions.canAddTransactions) && (
@@ -223,38 +262,29 @@ export default function TransactionsPage() {
         </Alert>
       )}
 
-      {tab === "transactions" ? (
+      {tab === "transactions" && (
         <>
           <TransactionFilters filters={filters} onFilterChange={handleFilterChange} categories={categories} />
-
           {loading ? (
-            <div className="flex items-center justify-center min-h-[300px] text-black">
-              <Loader2 className="h-12 w-12 animate-spin text-[#ccff00]" />
+            <div className="flex items-center justify-center h-48 text-black">
+              <Loader2 className="h-6 w-6 animate-spin text-black" />
               <span className="sr-only">Loading transactions...</span>
             </div>
-          ) : error ? (
-            <Alert variant="destructive" className="bg-red-50 border-red-200 text-red-700 rounded-2xl p-4">
-              <AlertTitle className="font-bold">Error</AlertTitle>
-              <AlertDescription className="text-xs mt-0.5">{error}</AlertDescription>
-            </Alert>
+          ) : filteredTransactions.length === 0 ? (
+            <div className="text-center text-black/45 font-semibold py-12 bg-white border border-black/5 rounded-3xl shadow-sm">
+              <div className="w-12 h-12 rounded-full bg-black/5 flex items-center justify-center mx-auto mb-3">
+                <FileText className="h-5 w-5 text-black/40" />
+              </div>
+              <p className="text-sm font-bold">No transactions found.</p>
+              <p className="text-xs text-black/40 mt-1">Try adjusting filters or add a new transaction.</p>
+            </div>
           ) : (
             <TransactionList transactions={filteredTransactions} />
           )}
         </>
-      ) : (
-        <div className="space-y-4 bg-white p-6 rounded-3xl border border-black/5 shadow-sm">
-          {!permissions.canViewReceipts && (
-            <Alert className="bg-amber-50 border-amber-200 text-amber-800 rounded-2xl p-4">
-              <AlertTriangle className="h-4 w-4 text-amber-600" />
-              <AlertTitle className="font-bold">Limited Access</AlertTitle>
-              <AlertDescription className="text-xs mt-0.5">You do not have permission to view receipts.</AlertDescription>
-            </Alert>
-          )}
-          <p className="text-xs font-bold text-black/55 leading-relaxed">
-            Upload receipts and MOUs, and link them to transactions. A full receipts table can be added here later.
-          </p>
-        </div>
       )}
+
+      {tab === "receipts" && <ReceiptsPanel />}
     </motion.div>
   )
 }

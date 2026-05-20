@@ -157,7 +157,7 @@ export async function updateUserPermissions(
 }
 
 // Update user role
-export async function updateUserRole(userId: string, role: "admin" | "member"): Promise<void> {
+export async function updateUserRole(userId: string, role: "admin" | "member" | "viewer"): Promise<void> {
   const users = initializeUsers()
   const user = users.find(u => u.id === userId)
   
@@ -170,9 +170,9 @@ export async function updateUserRole(userId: string, role: "admin" | "member"): 
   }
   
   const updatedPermissions = {
-    canEditTransactions: role === "admin",
-    canUploadReceipts: true,
-    canEditNotes: role === "admin",
+    canEditTransactions: role !== "viewer",
+    canUploadReceipts: role !== "viewer",
+    canEditNotes: role !== "viewer",
   }
   
   const updatedUsers = users.map(u => 

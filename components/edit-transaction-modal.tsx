@@ -34,6 +34,7 @@ type EditTransactionModalProps = {
 export function EditTransactionModal({ isOpen, onClose, transaction }: EditTransactionModalProps) {
   const { symbol, convert, convertToINR, currency } = useCurrency()
   const { updateTransaction, categories } = useTransactions()
+  const availableCategories = categories.includes("Transfer") ? categories : [...categories, "Transfer"]
 
   // Convert stored base INR amount to the active currency for display
   const toDisplayAmount = (inrAmount: number) =>
@@ -102,7 +103,7 @@ export function EditTransactionModal({ isOpen, onClose, transaction }: EditTrans
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[425px] bg-white text-black border border-black/5 rounded-3xl shadow-2xl p-6">
+      <DialogContent className="sm:max-w-[425px] w-[calc(100%-2rem)] sm:w-full max-h-[calc(100vh-2rem)] sm:max-h-[90vh] overflow-y-auto bg-white text-black border border-black/5 rounded-3xl shadow-2xl p-6">
         <DialogHeader>
           <DialogTitle className="text-lg font-black text-black">Edit Transaction</DialogTitle>
           <DialogDescription className="text-xs text-black/60 font-medium">
@@ -151,7 +152,7 @@ export function EditTransactionModal({ isOpen, onClose, transaction }: EditTrans
                   <SelectValue placeholder="Select a category" />
                 </SelectTrigger>
                 <SelectContent className="bg-white text-black border border-black/5 rounded-xl shadow-xl z-[999]">
-                  {categories.map((cat) => (
+                  {availableCategories.map((cat) => (
                     <SelectItem key={cat} value={cat} className="hover:bg-black/5 focus:bg-black/5 cursor-pointer font-semibold text-xs py-2 px-3">
                       {cat}
                     </SelectItem>

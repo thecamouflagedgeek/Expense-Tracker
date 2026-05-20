@@ -159,7 +159,7 @@ export function BulkAddModal() {
           <Upload className="mr-2 h-4 w-4 text-[#ccff00]" /> Bulk Add
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[900px] max-h-[80vh] overflow-y-auto bg-white text-black border border-black/5 rounded-3xl shadow-2xl p-6">
+      <DialogContent className="sm:max-w-[900px] w-[calc(100%-2rem)] sm:w-full max-h-[calc(100vh-2rem)] sm:max-h-[80vh] overflow-y-auto bg-white text-black border border-black/5 rounded-3xl shadow-2xl p-6">
         <DialogHeader>
           <DialogTitle className="text-lg font-black text-black">Bulk Add Transactions</DialogTitle>
           <DialogDescription className="text-xs text-black/60 font-medium">

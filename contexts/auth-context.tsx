@@ -7,7 +7,7 @@ import { useNotification } from "./notification-context"
 import * as authService from "@/services/authService"
 import type { User } from "@/services/authService"
 
-export type UserRole = "main-admin" | "college-admin" | "department-user" | "editor" | "viewer"
+export type UserRole = "admin" | "member" | "viewer"
 
 export type { User } from "@/services/authService"
 
@@ -28,8 +28,9 @@ type AuthContextType = {
   logout: () => Promise<void>
   updateUserStatus: (userId: string, isActive: boolean) => Promise<void>
   updateUserPermissions: (userId: string, permissions: Partial<User["customPermissions"]>) => Promise<void>
-  updateUserRole: (userId: string, role: "admin" | "member") => Promise<void>
+  updateUserRole: (userId: string, role: "admin" | "member" | "viewer") => Promise<void>
   deleteUser: (userId: string) => Promise<void>
+  activityLog: any[]
 }
 
 export const AuthContext = createContext<AuthContextType | undefined>(undefined)
@@ -264,7 +265,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   )
 
   const updateUserRole = useCallback(
-    async (userId: string, role: "admin" | "member") => {
+    async (userId: string, role: "admin" | "member" | "viewer") => {
       try {
         await authService.updateUserRole(userId, role)
 
@@ -275,7 +276,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         recordActivity("role_update", { userId, newRole: role })
 
         addNotification({
-          message: `User role updated to ${role === "admin" ? "Admin" : "Department User"} successfully!`,
+          message: `User role updated to ${role === "admin" ? "Admin" : role === "viewer" ? "Viewer" : "Member"} successfully!`,
           type: "success",
         })
       } catch (err: any) {
@@ -331,6 +332,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     updateUserPermissions,
     updateUserRole,
     deleteUser,
+    activityLog,
   }
 
   return <AuthContext.Provider value={contextValue}>{children}</AuthContext.Provider>

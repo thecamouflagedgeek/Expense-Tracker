@@ -94,6 +94,7 @@ export function ReceiptUploadModal() {
       const existingReceipts = JSON.parse(localStorage.getItem(LOCAL_STORAGE_RECEIPTS_KEY) || "[]")
       const updatedReceipts = [...existingReceipts, newReceipt]
       localStorage.setItem(LOCAL_STORAGE_RECEIPTS_KEY, JSON.stringify(updatedReceipts))
+      window.dispatchEvent(new Event("receipts-updated"))
 
       addNotification({
         id: Date.now(),
@@ -127,7 +128,7 @@ export function ReceiptUploadModal() {
           <UploadCloud className="mr-2 h-4 w-4 text-[#ccff00]" /> Upload Receipt
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[425px] bg-white text-black border border-black/5 rounded-3xl shadow-2xl p-6">
+      <DialogContent className="sm:max-w-[425px] w-[calc(100%-2rem)] sm:w-full max-h-[calc(100vh-2rem)] sm:max-h-[90vh] overflow-y-auto bg-white text-black border border-black/5 rounded-3xl shadow-2xl p-6">
         <DialogHeader>
           <DialogTitle className="text-lg font-black text-black">Upload Receipt</DialogTitle>
           <DialogDescription className="text-xs text-black/60 font-medium">Upload an image or PDF of your receipt.</DialogDescription>

@@ -19,6 +19,7 @@ import {
   CreditCard, 
   FileText, 
   Settings, 
+  Shield,
   Bell, 
   FileDown, 
   LogOut, 
@@ -47,12 +48,14 @@ export function Navigation() {
     { name: "Dashboard", href: "/dashboard", icon: Home, show: permissions.canViewDashboard },
     { name: "Transactions", href: "/transactions", icon: CreditCard, show: permissions.canViewTransactions },
     { name: "Notes", href: "/notes", icon: FileText, show: permissions.canViewNotes },
+    { name: "Admin", href: "/admin", icon: Shield, show: permissions.canAccessAdminHub },
   ]
 
   // Get Page Title based on route
   const getPageTitle = () => {
     if (pathname.startsWith("/transactions")) return "Finance"
     if (pathname.startsWith("/notes")) return "Notes"
+    if (pathname.startsWith("/admin")) return "Admin"
     return "Dashboard"
   }
 
@@ -75,7 +78,7 @@ export function Navigation() {
   return (
     <>
       {/* 1. FLOATING SIDEBAR (Desktop only) */}
-      <aside className="fixed top-4 left-4 bottom-4 w-20 bg-[#0c0d0e] rounded-[24px] shadow-2xl flex flex-col items-center py-6 justify-between z-50 hidden md:flex border border-white/5">
+      <aside className="fixed top-4 left-4 bottom-4 w-20 bg-[#0c0d0e] rounded-[24px] shadow-2xl flex-col items-center py-6 justify-between z-50 hidden md:flex border border-white/5">
         <div className="flex flex-col items-center gap-10 w-full">
           {/* Circular Double-Ring Electric Lime Logo */}
           <Link href="/dashboard" className="relative group">
@@ -268,7 +271,7 @@ export function Navigation() {
                 <DropdownMenuSeparator className="bg-black/5" />
                 
                 <div className="px-3 py-1.5 text-[10px] uppercase font-black text-[#ccff00] bg-black rounded-lg mx-2 my-1 text-center">
-                  Role: {user.role === "admin" ? "Administrator" : "Department user"}
+                  Role: {user.role === "admin" ? "Administrator" : user.role === "viewer" ? "Viewer" : "Member"}
                 </div>
                 
                 <DropdownMenuSeparator className="bg-black/5" />
@@ -293,7 +296,7 @@ export function Navigation() {
       </header>
 
       {/* 3. MOBILE BOTTOM NAVIGATION BAR (unique pill-style floating nav) */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 px-4 pb-4 pt-0">
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 px-4 pb-[calc(1rem+env(safe-area-inset-bottom))] pt-0">
         <div className="bg-[#0c0d0e]/95 backdrop-blur-xl border border-white/10 rounded-[28px] shadow-[0_-8px_40px_rgba(0,0,0,0.35)] flex items-center justify-around px-2 py-2">
           {navItems.filter(i => i.show).map((item) => {
             const isActive = pathname === item.href
@@ -368,7 +371,7 @@ export function Navigation() {
                 <div className="px-3 pb-2 text-[10px] text-white/40 truncate">{user.email}</div>
                 <DropdownMenuSeparator className="bg-white/10" />
                 <div className="px-3 py-1.5 text-[9px] uppercase font-black text-[#ccff00] bg-white/5 rounded-lg mx-2 my-1 text-center">
-                  {user.role === "admin" ? "Administrator" : "Department user"}
+                  {user.role === "admin" ? "Administrator" : user.role === "viewer" ? "Viewer" : "Member"}
                 </div>
                 <DropdownMenuSeparator className="bg-white/10" />
                 <DropdownMenuItem

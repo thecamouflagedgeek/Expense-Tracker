@@ -42,16 +42,16 @@ export function TransactionFilters({ filters, onFilterChange, categories }: Tran
   }
 
   return (
-    <div className="flex flex-wrap items-center gap-4 mb-6">
+    <div className="flex flex-col md:flex-row md:flex-wrap items-stretch md:items-center gap-4 mb-6">
       <Input
         placeholder="Search transactions..."
         value={filters.search}
         onChange={(e) => onFilterChange({ search: e.target.value })}
-        className="max-w-sm bg-white text-black border border-black/5 hover:bg-black/[0.02] focus:bg-white focus:ring-2 focus:ring-black rounded-xl text-xs h-10 font-semibold shadow-sm placeholder:text-black/30"
+        className="w-full md:max-w-sm bg-white text-black border border-black/5 hover:bg-black/[0.02] focus:bg-white focus:ring-2 focus:ring-black rounded-xl text-xs h-10 font-semibold shadow-sm placeholder:text-black/30"
       />
 
       <Select value={filters.category} onValueChange={(value) => onFilterChange({ category: value })}>
-        <SelectTrigger className="w-[180px] bg-white text-black border border-black/5 hover:bg-black/[0.02] transition-colors rounded-xl text-xs h-10 font-semibold shadow-sm focus:ring-2 focus:ring-black">
+        <SelectTrigger className="w-full md:w-[180px] bg-white text-black border border-black/5 hover:bg-black/[0.02] transition-colors rounded-xl text-xs h-10 font-semibold shadow-sm focus:ring-2 focus:ring-black">
           <SelectValue placeholder="Select Category" />
         </SelectTrigger>
         <SelectContent className="bg-white text-black border border-black/5 rounded-2xl shadow-xl">
@@ -70,7 +70,7 @@ export function TransactionFilters({ filters, onFilterChange, categories }: Tran
         <PopoverTrigger asChild>
           <Button
             variant={"outline"}
-            className={`w-[280px] justify-start text-left font-normal bg-white text-black border border-black/5 hover:bg-black/[0.02] rounded-xl text-xs h-10 shadow-sm focus:ring-2 focus:ring-black ${
+            className={`w-full md:w-[280px] justify-start text-left font-normal bg-white text-black border border-black/5 hover:bg-black/[0.02] rounded-xl text-xs h-10 shadow-sm focus:ring-2 focus:ring-black ${
               !dateRange.from && "text-black/40"
             }`}
           >

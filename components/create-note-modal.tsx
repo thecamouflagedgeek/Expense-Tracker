@@ -57,7 +57,7 @@ export function CreateNoteModal() {
           <PlusCircle className="mr-2 h-4 w-4 text-[#ccff00]" /> Create New Note
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[425px] bg-white text-black border border-black/5 rounded-3xl shadow-2xl p-6">
+      <DialogContent className="sm:max-w-[425px] w-[calc(100%-2rem)] sm:w-full max-h-[calc(100vh-2rem)] sm:max-h-[90vh] overflow-y-auto bg-white text-black border border-black/5 rounded-3xl shadow-2xl p-6">
         <DialogHeader>
           <DialogTitle className="text-lg font-black text-black">Create New Note</DialogTitle>
           <DialogDescription className="text-xs text-black/60 font-medium">Fill in the details for your new note.</DialogDescription>

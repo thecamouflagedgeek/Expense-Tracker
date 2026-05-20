@@ -342,11 +342,15 @@ function CardWidget({ totalExpenses }: { totalExpenses: number }) {
    SUB-COMPONENT 2: QUICK TRANSFER (AVATARS + AMOUNT SEND)
    ======================================================== */
 function QuickTransfer() {
-  const { symbol } = useCurrency()
+  const { symbol, convertToINR, currency } = useCurrency()
   const { addNotification } = useNotification()
+  const { addTransaction } = useTransactions()
+  const { permissions } = useRole()
   const [selectedFriend, setSelectedFriend] = useState(0)
   const [amount, setAmount] = useState("")
   const [sending, setSending] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [showSuccess, setShowSuccess] = useState(false)
 
   const friends = [
     { name: "Anna Davis", initials: "AD", color: "bg-rose-500/10 text-rose-600 border-rose-500/20" },
@@ -355,25 +359,50 @@ function QuickTransfer() {
     { name: "Tyler Lee", initials: "TL", color: "bg-[#ccff00]/15 text-black border-black/10" },
   ]
 
-  const handleSend = () => {
-    const numAmount = parseFloat(amount)
-    if (!amount || isNaN(numAmount) || numAmount <= 0) {
+  const handleSend = async () => {
+    if (!permissions.canAddTransactions) {
       addNotification({
-        message: "Please enter a valid transfer amount above 0.",
-        type: "error"
+        message: "You do not have permission to send transfers.",
+        type: "info",
       })
       return
     }
 
+    const numAmount = Number.parseFloat(amount)
+    if (!amount || Number.isNaN(numAmount) || numAmount <= 0) {
+      setError("Enter a valid amount greater than 0.")
+      return
+    }
+
     setSending(true)
-    setTimeout(() => {
-      addNotification({
-        message: `Successfully transferred ${symbol}${numAmount} to ${friends[selectedFriend].name}!`,
-        type: "success"
+    setError(null)
+
+    try {
+      const friend = friends[selectedFriend]
+      const amountInINR = currency === "INR" ? numAmount : convertToINR(numAmount)
+      await addTransaction({
+        title: `Transfer to ${friend.name}`,
+        amount: amountInINR,
+        category: "Transfer",
+        date: new Date().toISOString(),
+        description: "Quick transfer sent from dashboard",
       })
       setAmount("")
+      setShowSuccess(true)
+      addNotification({
+        message: `Transfer sent to ${friend.name}.`,
+        type: "success",
+      })
+      setTimeout(() => setShowSuccess(false), 1200)
+    } catch (err: any) {
+      setError(err?.message || "Failed to send transfer.")
+      addNotification({
+        message: "Transfer failed. Please try again.",
+        type: "error",
+      })
+    } finally {
       setSending(false)
-    }, 1000)
+    }
   }
 
   return (
@@ -393,6 +422,7 @@ function QuickTransfer() {
                 key={friend.name}
                 onClick={() => setSelectedFriend(i)}
                 className="flex flex-col items-center gap-1.5 focus:outline-none group"
+                aria-pressed={isSelected}
               >
                 <div 
                   className={`w-11 h-11 rounded-full flex items-center justify-center font-bold text-xs border shadow-sm transition-all duration-300 ${friend.color} ${
@@ -423,33 +453,46 @@ function QuickTransfer() {
             </div>
             <input
               type="number"
+              min="0"
+              step="0.01"
               placeholder="0.00"
               value={amount}
-              onChange={(e) => setAmount(e.target.value)}
-              disabled={sending}
+              onChange={(e) => {
+                setAmount(e.target.value)
+                if (error) {
+                  setError(null)
+                }
+              }}
+              disabled={sending || !permissions.canAddTransactions}
               className="w-full bg-transparent pl-9 pr-4 py-3 text-sm font-extrabold text-black focus:outline-none placeholder:text-black/25"
             />
           </div>
+          {error && <p className="text-[10px] font-bold text-red-500">{error}</p>}
+          {!permissions.canAddTransactions && (
+            <p className="text-[10px] font-semibold text-black/45">Transfers are view-only for your role.</p>
+          )}
         </div>
 
         {/* Send Button */}
-        <button
-          onClick={handleSend}
-          disabled={sending}
-          className="button-gradient w-full py-3 text-xs flex items-center justify-center gap-1.5 disabled:opacity-50"
-        >
-          {sending ? (
-            <>
-              <Loader2 className="w-4 h-4 animate-spin text-[#ccff00]" />
-              <span>Processing...</span>
-            </>
-          ) : (
-            <>
-              <span>Send Money</span>
-              <ArrowRight className="w-4 h-4 text-[#ccff00]" />
-            </>
-          )}
-        </button>
+        {permissions.canAddTransactions && (
+          <button
+            onClick={handleSend}
+            disabled={sending}
+            className={`button-gradient w-full py-3 text-xs flex items-center justify-center gap-1.5 disabled:opacity-50 ${showSuccess ? "ring-2 ring-black/10" : ""}`}
+          >
+            {sending ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin text-[#ccff00]" />
+                <span>Processing...</span>
+              </>
+            ) : (
+              <>
+                <span>Send Money</span>
+                <ArrowRight className="w-4 h-4 text-[#ccff00]" />
+              </>
+            )}
+          </button>
+        )}
       </CardContent>
     </Card>
   )

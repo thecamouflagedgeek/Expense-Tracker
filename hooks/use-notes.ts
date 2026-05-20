@@ -224,6 +224,40 @@ export const useNotes = () => {
     [user, addNotification],
   )
 
+  const setNoteArchived = useCallback(
+    async (id: string, isArchived: boolean) => {
+      if (!user) {
+        setError("User not authenticated.")
+        addNotification({
+          message: "Failed to update note: User not authenticated.",
+          type: "error",
+        })
+        return
+      }
+
+      try {
+        await new Promise((resolve) => setTimeout(resolve, 200))
+
+        setAllNotes((prev) =>
+          prev.map((n) => (n.id === id ? { ...n, isArchived, updatedAt: new Date().toISOString() } : n)),
+        )
+        addNotification({
+          message: isArchived ? "Note archived." : "Note restored.",
+          type: "success",
+        })
+      } catch (err: any) {
+        console.error("Error updating note:", err)
+        setError(err.message || "Failed to update note.")
+        addNotification({
+          message: `Failed to update note: ${err.message}`,
+          type: "error",
+        })
+        throw err
+      }
+    },
+    [user, addNotification],
+  )
+
   return {
     notes,
     loading,
@@ -231,6 +265,7 @@ export const useNotes = () => {
     createNote,
     updateNote,
     deleteNote,
+    setNoteArchived,
     fetchNotes,
   }
 }

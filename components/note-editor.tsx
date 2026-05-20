@@ -11,14 +11,32 @@ type NoteEditorProps = {
   initialContent: string
   onSave: (content: string) => void
   isSaving: boolean
+  showActions?: boolean
+  textareaClassName?: string
+  value?: string
+  onContentChange?: (value: string) => void
+  readOnly?: boolean
 }
 
-export function NoteEditor({ initialContent, onSave, isSaving }: NoteEditorProps) {
+export function NoteEditor({
+  initialContent,
+  onSave,
+  isSaving,
+  showActions = true,
+  textareaClassName = "",
+  value,
+  onContentChange,
+  readOnly = false,
+}: NoteEditorProps) {
   const [content, setContent] = useState(initialContent)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
+  const isControlled = typeof value === "string"
+  const resolvedContent = isControlled ? value : content
 
   useEffect(() => {
-    setContent(initialContent)
+    if (!isControlled) {
+      setContent(initialContent)
+    }
   }, [initialContent])
 
   useEffect(() => {
@@ -27,36 +45,44 @@ export function NoteEditor({ initialContent, onSave, isSaving }: NoteEditorProps
       textareaRef.current.style.height = "auto"
       textareaRef.current.style.height = textareaRef.current.scrollHeight + "px"
     }
-  }, [content])
+  }, [resolvedContent])
 
   const handleContentChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    setContent(e.target.value)
+    if (onContentChange) {
+      onContentChange(e.target.value)
+    }
+    if (!isControlled) {
+      setContent(e.target.value)
+    }
   }
 
   const handleSaveClick = () => {
-    onSave(content)
+    onSave(resolvedContent)
   }
 
   return (
     <div className="flex flex-col gap-4">
       <Textarea
         ref={textareaRef}
-        value={content}
+        value={resolvedContent}
         onChange={handleContentChange}
         placeholder="Start writing your note here..."
-        className="min-h-[300px] bg-black/[0.02] border border-black/5 text-black hover:bg-black/[0.04] focus:bg-white focus:ring-2 focus:ring-black rounded-2xl p-4 text-xs font-medium placeholder:text-black/30 resize-none overflow-hidden"
+        readOnly={readOnly}
+        className={`min-h-[300px] bg-black/[0.02] border border-black/5 text-black hover:bg-black/[0.04] focus:bg-white focus:ring-2 focus:ring-black rounded-2xl p-4 text-xs font-medium placeholder:text-black/30 resize-none overflow-hidden ${readOnly ? "cursor-not-allowed bg-black/[0.01]" : ""} ${textareaClassName}`}
       />
-      <Button onClick={handleSaveClick} className="button-gradient self-end px-5 py-2.5 h-11 text-xs" disabled={isSaving}>
-        {isSaving ? (
-          <>
-            <Loader2 className="mr-2 h-4 w-4 animate-spin text-[#ccff00]" /> Saving...
-          </>
-        ) : (
-          <>
-            <Save className="mr-2 h-4 w-4 text-[#ccff00]" /> Save Note
-          </>
-        )}
-      </Button>
+      {showActions && (
+        <Button onClick={handleSaveClick} className="button-gradient self-end px-5 py-2.5 h-11 text-xs" disabled={isSaving}>
+          {isSaving ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin text-[#ccff00]" /> Saving...
+            </>
+          ) : (
+            <>
+              <Save className="mr-2 h-4 w-4 text-[#ccff00]" /> Save Note
+            </>
+          )}
+        </Button>
+      )}
     </div>
   )
 }
