@@ -85,7 +85,7 @@ export const exportToPDF = async (elementId: string, filename = "export.pdf") =>
       scale: 2,
       useCORS: true,
       allowTaint: true,
-      backgroundColor: "#222831",
+      backgroundColor: "#eff1e9",
       logging: false,
     })
 
@@ -122,7 +122,7 @@ export const exportToPDF = async (elementId: string, filename = "export.pdf") =>
 }
 
 // Specific export functions for transactions
-export const exportTransactionsToExcel = (transactions: any[]) => {
+export const exportTransactionsToExcel = (transactions: any[], formatFn?: (amount: number) => string) => {
   try {
     if (!transactions || transactions.length === 0) {
       throw new Error("No transactions to export")
@@ -131,9 +131,8 @@ export const exportTransactionsToExcel = (transactions: any[]) => {
     const data = transactions.map((t) => ({
       ID: t.id,
       Title: t.title,
-      Amount: `₹${t.amount.toFixed(2)}`, // Updated currency symbol from $ to ₹
+      Amount: formatFn ? formatFn(t.amount) : `₹${t.amount.toFixed(2)}`,
       Category: t.category,
-      Type: t.type,
       Date: new Date(t.date).toLocaleDateString(),
       Description: t.description || "",
     }))
@@ -144,7 +143,7 @@ export const exportTransactionsToExcel = (transactions: any[]) => {
   }
 }
 
-export const exportTransactionsToCSV = (transactions: any[]) => {
+export const exportTransactionsToCSV = (transactions: any[], formatFn?: (amount: number) => string) => {
   try {
     if (!transactions || transactions.length === 0) {
       throw new Error("No transactions to export")
@@ -153,9 +152,8 @@ export const exportTransactionsToCSV = (transactions: any[]) => {
     const data = transactions.map((t) => ({
       ID: t.id,
       Title: t.title,
-      Amount: `₹${t.amount.toFixed(2)}`, // Updated currency symbol from $ to ₹
+      Amount: formatFn ? formatFn(t.amount) : `₹${t.amount.toFixed(2)}`,
       Category: t.category,
-      Type: t.type,
       Date: new Date(t.date).toLocaleDateString(),
       Description: t.description || "",
     }))

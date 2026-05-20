@@ -6,8 +6,6 @@ import { createContext, useState, useEffect, useContext, useCallback } from "rea
 import { useNotification } from "./notification-context"
 import * as authService from "@/services/authService"
 import type { User } from "@/services/authService"
-import { auth } from "@/lib/firebaseConfig"
-import { onAuthStateChanged } from "firebase/auth"
 
 export type UserRole = "main-admin" | "college-admin" | "department-user" | "editor" | "viewer"
 
@@ -49,39 +47,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     const loadInitialData = async () => {
       try {
+        // Load current user from localStorage
+        const currentUser = authService.getCurrentUser()
+        if (currentUser) {
+          setUser(currentUser)
+          setUserData(currentUser)
+        }
+        
+        // Load all users
         const users = await authService.getAllUsers()
         setAllUsers(users)
       } catch (err) {
         console.error("Error loading users:", err)
         setError("Failed to load users")
+      } finally {
+        setLoading(false)
       }
     }
 
-    // Set up Firebase Auth state listener
-    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
-      if (firebaseUser) {
-        try {
-          // Get user data from Firestore
-          const userDoc = await authService.getUserById(firebaseUser.uid)
-          if (userDoc) {
-            setUser(userDoc)
-            setUserData(userDoc)
-          }
-        } catch (err) {
-          console.error("Error loading user data:", err)
-          setError("Failed to load user data")
-        }
-      } else {
-        setUser(null)
-        setUserData(null)
-      }
-      setLoading(false)
-    })
-
     loadInitialData()
-
-    // Cleanup subscription
-    return () => unsubscribe()
   }, [])
 
   const recordActivity = useCallback((type: string, details: any) => {

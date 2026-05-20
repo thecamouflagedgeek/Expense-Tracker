@@ -1,32 +1,57 @@
 "use client"
 
 import { useState, useMemo } from "react"
+import { useSearchParams, useRouter } from "next/navigation"
 import { motion } from "framer-motion"
-import { useTransactions } from "@/hooks/use-transactions"
+import { useTransactions } from "@/context/transaction-context"
 import { TransactionList } from "@/components/transaction-list"
 import { TransactionFilters } from "@/components/transaction-filters"
 import { AddTransactionModal } from "@/components/add-transaction-modal"
 import { BulkAddModal } from "@/components/bulk-add-modal"
+import { ReceiptUploadModal } from "@/components/receipt-upload-modal"
+import { UploadDriveModal } from "@/components/upload-drive-modal"
 import { exportTransactionsToExcel, exportTransactionsToCSV } from "@/utils/export-utils"
 import { generateTransactionsPdf } from "@/utils/pdf-utils"
 import { useRole } from "@/contexts/role-context"
+import { useCurrency } from "@/context/currency-context"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Loader2, Lock, AlertTriangle, Download, FileSpreadsheet, FileText, File } from "lucide-react"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Button } from "@/components/ui/button"
 
+type Filters = {
+  search: string
+  category: string
+  startDate: Date | undefined
+  endDate: Date | undefined
+}
+
 export default function TransactionsPage() {
   const { transactions, categories, loading, error } = useTransactions()
   const { permissions, isAccountActive } = useRole()
+  const { format } = useCurrency()
+  const search = useSearchParams()
+  const router = useRouter()
 
-  const [filters, setFilters] = useState({
+  const tab = useMemo<"transactions" | "receipts">(() => {
+    const t = search.get("tab")
+    return t === "receipts" ? "receipts" : "transactions"
+  }, [search])
+
+  const setTab = (next: "transactions" | "receipts") => {
+    const p = new URLSearchParams(search.toString())
+    p.set("tab", next)
+    router.replace(`/transactions?${p.toString()}`)
+  }
+
+  const [filters, setFilters] = useState<Filters>({
     search: "",
     category: "all",
     startDate: undefined,
     endDate: undefined,
   })
 
-  const handleFilterChange = (newFilters: Partial<typeof filters>) => {
+  const handleFilterChange = (newFilters: Partial<Filters>) => {
     setFilters((prev) => ({ ...prev, ...newFilters }))
   }
 
@@ -46,44 +71,44 @@ export default function TransactionsPage() {
     }
 
     if (filters.startDate) {
-      filtered = filtered.filter((t) => new Date(t.date) >= filters.startDate!)
+      filtered = filtered.filter((t) => new Date(t.date) >= (filters.startDate as Date))
     }
 
     if (filters.endDate) {
-      filtered = filtered.filter((t) => new Date(t.date) <= filters.endDate!)
+      filtered = filtered.filter((t) => new Date(t.date) <= (filters.endDate as Date))
     }
 
     return filtered
   }, [transactions, filters])
 
   const handleExportExcel = () => {
-    exportTransactionsToExcel(filteredTransactions)
+    exportTransactionsToExcel(filteredTransactions, format)
   }
 
   const handleExportCSV = () => {
-    exportTransactionsToCSV(filteredTransactions)
+    exportTransactionsToCSV(filteredTransactions, format)
   }
 
   const handleExportPDF = () => {
-    generateTransactionsPdf(filteredTransactions)
+    generateTransactionsPdf(filteredTransactions, format)
   }
 
   if (!isAccountActive) {
     return (
-      <div className="flex items-center justify-center min-h-[400px] bg-[#222831] text-[#EEEEEE]">
+      <div className="flex items-center justify-center min-h-[400px] bg-[#eff1e9] text-black">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="text-center max-w-md mx-auto p-8"
+          className="text-center max-w-md mx-auto p-8 bg-white border border-black/5 rounded-3xl shadow-xl"
         >
-          <div className="w-16 h-16 bg-orange-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
-            <AlertTriangle className="w-8 h-8 text-orange-500" />
+          <div className="w-16 h-16 bg-orange-500/10 rounded-full flex items-center justify-center mx-auto mb-4 border border-orange-500/20">
+            <AlertTriangle className="w-8 h-8 text-orange-600" />
           </div>
-          <h2 className="text-2xl font-bold text-orange-400 mb-2">Account Inactive</h2>
-          <p className="text-[#EEEEEE]/70 mb-4">
+          <h2 className="text-2xl font-black text-orange-600 mb-2">Account Inactive</h2>
+          <p className="text-black/60 text-sm mb-4">
             Your account has been deactivated by an administrator. Please contact support to reactivate your account.
           </p>
-          <div className="text-sm text-[#EEEEEE]/50">
+          <div className="text-xs text-black/40 font-semibold">
             If you believe this is an error, please reach out to your system administrator.
           </div>
         </motion.div>
@@ -93,20 +118,20 @@ export default function TransactionsPage() {
 
   if (!permissions.canViewTransactions) {
     return (
-      <div className="flex items-center justify-center min-h-[400px] bg-[#222831] text-[#EEEEEE]">
+      <div className="flex items-center justify-center min-h-[400px] bg-[#eff1e9] text-black">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="text-center max-w-md mx-auto p-8"
+          className="text-center max-w-md mx-auto p-8 bg-white border border-black/5 rounded-3xl shadow-xl"
         >
-          <div className="w-16 h-16 bg-red-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
-            <Lock className="w-8 h-8 text-red-400" />
+          <div className="w-16 h-16 bg-red-500/10 rounded-full flex items-center justify-center mx-auto mb-4 border border-red-500/20">
+            <Lock className="w-8 h-8 text-red-500" />
           </div>
-          <h2 className="text-2xl font-bold text-red-400 mb-2">Access Denied</h2>
-          <p className="text-[#EEEEEE]/70 mb-4">
+          <h2 className="text-2xl font-black text-red-500 mb-2">Access Denied</h2>
+          <p className="text-black/60 text-sm mb-4">
             You do not have permission to view transactions. Your access has been restricted by an administrator.
           </p>
-          <div className="text-sm text-[#EEEEEE]/50">
+          <div className="text-xs text-black/40 font-semibold">
             Contact your administrator if you need access to this feature.
           </div>
         </motion.div>
@@ -116,45 +141,79 @@ export default function TransactionsPage() {
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 20 }}
+      initial={{ opacity: 0, y: 15 }}
       animate={{ opacity: 1, y: 0 }}
-      className="container mx-auto px-4 py-8 mt-16"
+      transition={{ duration: 0.4 }}
+      className="container mx-auto px-4 md:px-8 pt-6 md:pt-8 pb-8"
     >
-      <div className="flex flex-col md:flex-row items-center justify-between mb-6 space-y-4 md:space-y-0">
-        <h1 className="text-4xl font-bold text-[#00ADB5]">Transactions</h1>
-        <div className="flex flex-wrap justify-center gap-4">
-          {permissions.canAddTransactions && <AddTransactionModal />}
-          {permissions.canAddTransactions && <BulkAddModal />}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" className="border-slate-600 text-slate-300 hover:bg-slate-700 bg-transparent">
-                <Download className="mr-2 h-4 w-4" />
-                Export
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent className="bg-[#393E46] border-[#00ADB5]">
-              <DropdownMenuItem onClick={handleExportExcel} className="text-[#EEEEEE] hover:bg-[#00ADB5]/20">
-                <FileSpreadsheet className="mr-2 h-4 w-4" />
-                Export to Excel
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={handleExportCSV} className="text-[#EEEEEE] hover:bg-[#00ADB5]/20">
-                <File className="mr-2 h-4 w-4" />
-                Export to CSV
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={handleExportPDF} className="text-[#EEEEEE] hover:bg-[#00ADB5]/20">
-                <FileText className="mr-2 h-4 w-4" />
-                Export to PDF
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+      <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-6 gap-4">
+        <h1 className="text-2xl font-black tracking-tight text-black">Finance Hub</h1>
+        <div className="flex flex-wrap items-center gap-3">
+          {tab === "transactions" ? (
+            <>
+              {permissions.canAddTransactions && <AddTransactionModal />}
+              {permissions.canAddTransactions && <BulkAddModal />}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button className="button-gradient px-5 py-2 h-11 text-xs">
+                    <Download className="mr-2 h-4 w-4 text-[#ccff00]" />
+                    Export
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent className="bg-white border-black/5 text-black rounded-xl shadow-xl z-50">
+                  <DropdownMenuItem onClick={handleExportExcel} className="text-xs py-2 px-3 hover:bg-black/5 cursor-pointer font-semibold">
+                    <FileSpreadsheet className="mr-2 h-4 w-4 text-emerald-600" />
+                    Export to Excel
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={handleExportCSV} className="text-xs py-2 px-3 hover:bg-black/5 cursor-pointer font-semibold">
+                    <File className="mr-2 h-4 w-4 text-sky-600" />
+                    Export to CSV
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={handleExportPDF} className="text-xs py-2 px-3 hover:bg-black/5 cursor-pointer font-semibold">
+                    <FileText className="mr-2 h-4 w-4 text-rose-600" />
+                    Export to PDF
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </>
+          ) : (
+            <>
+              {permissions.canUploadReceipts && <ReceiptUploadModal />}
+              {permissions.canUploadToDrive && <UploadDriveModal />}
+            </>
+          )}
         </div>
       </div>
 
+      {/* Modern Pill Tabs */}
+      <div className="flex bg-white/70 p-1.5 rounded-full border border-black/5 shadow-sm self-start mb-6 w-fit">
+        <button
+          onClick={() => setTab("transactions")}
+          className={`px-5 py-2 rounded-full text-xs font-black transition-all duration-200 ${
+            tab === "transactions" 
+              ? "bg-black text-[#ccff00] shadow-sm" 
+              : "text-black/50 hover:text-black"
+          }`}
+        >
+          Transactions
+        </button>
+        <button
+          onClick={() => setTab("receipts")}
+          className={`px-5 py-2 rounded-full text-xs font-black transition-all duration-200 ${
+            tab === "receipts" 
+              ? "bg-black text-[#ccff00] shadow-sm" 
+              : "text-black/50 hover:text-black"
+          }`}
+        >
+          Receipts
+        </button>
+      </div>
+
       {(!permissions.canEditTransactions || !permissions.canAddTransactions) && (
-        <Alert className="bg-orange-900/20 border-orange-700 text-orange-400 mb-6">
-          <AlertTriangle className="h-4 w-4" />
-          <AlertTitle>Limited Access</AlertTitle>
-          <AlertDescription>
+        <Alert className="bg-amber-50 border-amber-200 text-amber-800 rounded-2xl p-4 mb-6 shadow-sm">
+          <AlertTriangle className="h-4 w-4 text-amber-600" />
+          <AlertTitle className="font-bold">Limited Access</AlertTitle>
+          <AlertDescription className="text-xs mt-0.5">
             {!permissions.canEditTransactions && !permissions.canAddTransactions
               ? "You have read-only access to transactions. Contact an administrator to request editing permissions."
               : !permissions.canEditTransactions
@@ -164,20 +223,37 @@ export default function TransactionsPage() {
         </Alert>
       )}
 
-      <TransactionFilters filters={filters} onFilterChange={handleFilterChange} categories={categories} />
+      {tab === "transactions" ? (
+        <>
+          <TransactionFilters filters={filters} onFilterChange={handleFilterChange} categories={categories} />
 
-      {loading ? (
-        <div className="flex items-center justify-center min-h-[300px] text-[#00ADB5]">
-          <Loader2 className="h-12 w-12 animate-spin" />
-          <span className="sr-only">Loading transactions...</span>
-        </div>
-      ) : error ? (
-        <Alert variant="destructive" className="bg-red-900/20 border-red-700 text-red-400">
-          <AlertTitle>Error</AlertTitle>
-          <AlertDescription>{error}</AlertDescription>
-        </Alert>
+          {loading ? (
+            <div className="flex items-center justify-center min-h-[300px] text-black">
+              <Loader2 className="h-12 w-12 animate-spin text-[#ccff00]" />
+              <span className="sr-only">Loading transactions...</span>
+            </div>
+          ) : error ? (
+            <Alert variant="destructive" className="bg-red-50 border-red-200 text-red-700 rounded-2xl p-4">
+              <AlertTitle className="font-bold">Error</AlertTitle>
+              <AlertDescription className="text-xs mt-0.5">{error}</AlertDescription>
+            </Alert>
+          ) : (
+            <TransactionList transactions={filteredTransactions} />
+          )}
+        </>
       ) : (
-        <TransactionList transactions={filteredTransactions} />
+        <div className="space-y-4 bg-white p-6 rounded-3xl border border-black/5 shadow-sm">
+          {!permissions.canViewReceipts && (
+            <Alert className="bg-amber-50 border-amber-200 text-amber-800 rounded-2xl p-4">
+              <AlertTriangle className="h-4 w-4 text-amber-600" />
+              <AlertTitle className="font-bold">Limited Access</AlertTitle>
+              <AlertDescription className="text-xs mt-0.5">You do not have permission to view receipts.</AlertDescription>
+            </Alert>
+          )}
+          <p className="text-xs font-bold text-black/55 leading-relaxed">
+            Upload receipts and MOUs, and link them to transactions. A full receipts table can be added here later.
+          </p>
+        </div>
       )}
     </motion.div>
   )

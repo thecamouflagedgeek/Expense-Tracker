@@ -47,19 +47,19 @@ export function TransactionFilters({ filters, onFilterChange, categories }: Tran
         placeholder="Search transactions..."
         value={filters.search}
         onChange={(e) => onFilterChange({ search: e.target.value })}
-        className="max-w-sm bg-[#393E46] text-[#EEEEEE] border-[#00ADB5] focus:ring-[#00ADB5]"
+        className="max-w-sm bg-white text-black border border-black/5 hover:bg-black/[0.02] focus:bg-white focus:ring-2 focus:ring-black rounded-xl text-xs h-10 font-semibold shadow-sm placeholder:text-black/30"
       />
 
       <Select value={filters.category} onValueChange={(value) => onFilterChange({ category: value })}>
-        <SelectTrigger className="w-[180px] bg-[#393E46] text-[#EEEEEE] border-[#00ADB5]">
+        <SelectTrigger className="w-[180px] bg-white text-black border border-black/5 hover:bg-black/[0.02] transition-colors rounded-xl text-xs h-10 font-semibold shadow-sm focus:ring-2 focus:ring-black">
           <SelectValue placeholder="Select Category" />
         </SelectTrigger>
-        <SelectContent className="bg-[#222831] text-[#EEEEEE] border-[#00ADB5]">
-          <SelectItem value="all" className="hover:bg-[#393E46] focus:bg-[#393E46]">
+        <SelectContent className="bg-white text-black border border-black/5 rounded-2xl shadow-xl">
+          <SelectItem value="all" className="hover:bg-black/[0.04] focus:bg-black/[0.04] text-xs font-semibold rounded-lg my-0.5 cursor-pointer">
             All Categories
           </SelectItem>
           {categories.map((category) => (
-            <SelectItem key={category} value={category} className="hover:bg-[#393E46] focus:bg-[#393E46]">
+            <SelectItem key={category} value={category} className="hover:bg-black/[0.04] focus:bg-black/[0.04] text-xs font-semibold rounded-lg my-0.5 cursor-pointer">
               {category}
             </SelectItem>
           ))}
@@ -70,11 +70,11 @@ export function TransactionFilters({ filters, onFilterChange, categories }: Tran
         <PopoverTrigger asChild>
           <Button
             variant={"outline"}
-            className={`w-[280px] justify-start text-left font-normal bg-[#393E46] text-[#EEEEEE] border-[#00ADB5] hover:bg-[#393E46] ${
-              !dateRange.from && "text-[#EEEEEE]/70"
+            className={`w-[280px] justify-start text-left font-normal bg-white text-black border border-black/5 hover:bg-black/[0.02] rounded-xl text-xs h-10 shadow-sm focus:ring-2 focus:ring-black ${
+              !dateRange.from && "text-black/40"
             }`}
           >
-            <CalendarIcon className="mr-2 h-4 w-4 text-[#00ADB5]" />
+            <CalendarIcon className="mr-2 h-4 w-4 text-[#ccff00]" />
             {dateRange.from ? (
               dateRange.to ? (
                 <>
@@ -84,11 +84,11 @@ export function TransactionFilters({ filters, onFilterChange, categories }: Tran
                 format(dateRange.from, "LLL dd, y")
               )
             ) : (
-              <span>Pick a date range</span>
+              <span className="font-semibold text-black/60">Pick a date range</span>
             )}
           </Button>
         </PopoverTrigger>
-        <PopoverContent className="w-auto p-0 bg-[#222831] border-[#00ADB5]">
+        <PopoverContent className="w-auto p-0 bg-white border border-black/5 rounded-2xl shadow-xl z-[999]">
           <Calendar
             mode="range"
             selected={{ from: dateRange.from, to: dateRange.to }}
@@ -103,9 +103,9 @@ export function TransactionFilters({ filters, onFilterChange, categories }: Tran
         <Button
           variant="ghost"
           onClick={() => onFilterChange({ search: "", category: "all", startDate: undefined, endDate: undefined })}
-          className="text-red-400 hover:bg-red-900/20 hover:text-red-300"
+          className="text-red-600 hover:bg-red-50 hover:text-red-700 font-semibold text-xs rounded-xl h-10 px-4"
         >
-          <XCircle className="mr-2 h-4 w-4" />
+          <XCircle className="mr-2 h-4 w-4 text-red-600" />
           Clear Filters
         </Button>
       )}

@@ -20,8 +20,8 @@ export default function HomePage() {
   }, [user, loading, router])
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-[#222831] text-[#00ADB5]">
-      <Loader2 className="h-12 w-12 animate-spin" />
+    <div className="flex flex-col items-center justify-center min-h-screen grid-bg-pattern text-black">
+      <Loader2 className="h-10 w-10 animate-spin text-black stroke-[3]" />
       <span className="sr-only">Loading...</span>
     </div>
   )

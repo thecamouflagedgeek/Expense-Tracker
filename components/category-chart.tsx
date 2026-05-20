@@ -1,49 +1,60 @@
 "use client"
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts"
-import { formatCurrency } from "@/utils/format-utils"
+import { Radar, RadarChart, PolarGrid, PolarAngleAxis, ResponsiveContainer } from "recharts"
+import { useCurrency } from "@/context/currency-context"
 
 type CategoryChartProps = {
   data: { name: string; value: number }[]
 }
 
-
-
 export function CategoryChart({ data }: CategoryChartProps) {
+  const { convert, format } = useCurrency()
+
+  // Format data for selected currency
+  const convertedData = data.map((item) => ({
+    name: item.name,
+    value: convert(item.value),
+  }))
+
   return (
-    <Card className="card-gradient border-[#393E46]">
-      <CardHeader>
-        <CardTitle className="text-xl text-[#00ADB5]">Spending by Category</CardTitle>
+    <Card className="card-gradient border-none p-6">
+      <CardHeader className="p-0 flex flex-row items-center justify-between">
+        <CardTitle className="text-base font-bold text-black tracking-tight">Spending</CardTitle>
+        <div className="flex items-center gap-4 text-[10px] font-semibold text-black/50">
+          <div className="flex items-center gap-1.5">
+            <span className="w-2.5 h-2.5 rounded-full bg-[#ccff00] border border-black/5" />
+            <span>This month</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <span className="w-2.5 h-2.5 rounded-full border border-black/30 bg-transparent" />
+            <span>Average</span>
+          </div>
+        </div>
       </CardHeader>
-      <CardContent>
-        <div className="h-[300px]">
-          <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={data} margin={{ top: 5, right: 10, left: 10, bottom: 5 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#393E46" />
-              <XAxis dataKey="name" stroke="#EEEEEE" />
-              <YAxis stroke="#EEEEEE" tickFormatter={(value) => formatCurrency(value)} />
-              <Tooltip
-                cursor={{ fill: "#393E46", opacity: 0.7 }}
-                contentStyle={{
-                  backgroundColor: "#222831",
-                  border: "1px solid #00ADB5",
-                  borderRadius: "8px",
-                  color: "#EEEEEE",
-                }}
-                labelStyle={{ color: "#00ADB5" }}
-                formatter={(value: number) => formatCurrency(value)}
-              />
-              <Line 
-                type="monotone" 
-                dataKey="value" 
-                stroke="#00ADB5" 
-                strokeWidth={3}
-                dot={{ fill: "#00ADB5", strokeWidth: 2, r: 4 }}
-                activeDot={{ r: 6, stroke: "#00ADB5", strokeWidth: 2, fill: "#00ADB5" }}
-              />
-            </LineChart>
-          </ResponsiveContainer>
+      <CardContent className="p-0 mt-6">
+        <div className="h-[240px] flex items-center justify-center">
+          {convertedData.length === 0 ? (
+            <p className="text-xs text-black/40">No spending details available</p>
+          ) : (
+            <ResponsiveContainer width="100%" height="100%">
+              <RadarChart cx="50%" cy="50%" outerRadius="75%" data={convertedData}>
+                <PolarGrid stroke="#e0e2d9" strokeDasharray="3 3" />
+                <PolarAngleAxis 
+                  dataKey="name" 
+                  tick={{ fill: "#0c0d0e", fontSize: 10, fontWeight: 600 }}
+                />
+                <Radar
+                  name="Spending"
+                  dataKey="value"
+                  stroke="#000000"
+                  strokeWidth={1.5}
+                  fill="#ccff00"
+                  fillOpacity={0.65}
+                />
+              </RadarChart>
+            </ResponsiveContainer>
+          )}
         </div>
       </CardContent>
     </Card>

@@ -1,12 +1,12 @@
 import jsPDF from "jspdf"
 import autoTable from "jspdf-autotable"
 
-export const generateTransactionsPdf = (transactions: any[]) => {
+export const generateTransactionsPdf = (transactions: any[], formatFn?: (amount: number) => string) => {
   try {
     const doc = new jsPDF()
 
     doc.setFontSize(18)
-    doc.setTextColor("#00ADB5")
+    doc.setTextColor("#000000")
     doc.text("Transaction Report", 14, 22)
 
     autoTable(doc, {
@@ -14,7 +14,7 @@ export const generateTransactionsPdf = (transactions: any[]) => {
       head: [["Title", "Amount", "Category", "Date", "Description"]],
       body: transactions.map((t) => [
         t.title,
-        `₹${t.amount.toFixed(2)}`, // Updated currency symbol from $ to ₹
+        formatFn ? formatFn(t.amount) : `₹${t.amount.toFixed(2)}`,
         t.category,
         new Date(t.date).toLocaleDateString(),
         t.description || "",
@@ -22,18 +22,18 @@ export const generateTransactionsPdf = (transactions: any[]) => {
       theme: "striped",
       styles: {
         font: "helvetica",
-        textColor: "#EEEEEE",
-        fillColor: "#393E46",
-        lineColor: "#00ADB5",
+        textColor: "#0c0d0e",
+        fillColor: "#ffffff",
+        lineColor: "#e0e2d9",
         lineWidth: 0.1,
       },
       headStyles: {
-        fillColor: "#00ADB5",
-        textColor: "#222831",
+        fillColor: "#000000",
+        textColor: "#ffffff",
         fontStyle: "bold",
       },
       alternateRowStyles: {
-        fillColor: "#222831",
+        fillColor: "#f9faf7",
       },
       didDrawPage: (data) => {
         // Footer
@@ -42,7 +42,7 @@ export const generateTransactionsPdf = (transactions: any[]) => {
           str = str + " of " + doc.putTotalPages()
         }
         doc.setFontSize(10)
-        doc.setTextColor("#00ADB5")
+        doc.setTextColor("#888888")
         doc.text(str, data.settings.margin.left, doc.internal.pageSize.height - 10)
       },
     })
@@ -59,7 +59,7 @@ export const generateNotesPdf = (notes: any[]) => {
     const doc = new jsPDF()
 
     doc.setFontSize(18)
-    doc.setTextColor("#00ADB5")
+    doc.setTextColor("#000000")
     doc.text("Notes Report", 14, 22)
 
     notes.forEach((note, index) => {
@@ -67,15 +67,15 @@ export const generateNotesPdf = (notes: any[]) => {
         doc.addPage()
       }
       doc.setFontSize(14)
-      doc.setTextColor("#00ADB5")
+      doc.setTextColor("#000000")
       doc.text(`Title: ${note.title}`, 14, 30)
       doc.setFontSize(10)
-      doc.setTextColor("#EEEEEE")
+      doc.setTextColor("#666666")
       doc.text(`Created: ${new Date(note.createdAt).toLocaleDateString()}`, 14, 38)
       doc.text(`Last Updated: ${new Date(note.updatedAt).toLocaleDateString()}`, 14, 45)
 
       doc.setFontSize(12)
-      doc.setTextColor("#EEEEEE")
+      doc.setTextColor("#0c0d0e")
       const contentLines = doc.splitTextToSize(note.content, doc.internal.pageSize.width - 28)
       doc.text(contentLines, 14, 55)
     })

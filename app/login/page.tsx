@@ -88,45 +88,45 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="flex items-center justify-center min-h-screen gradient-bg p-4">
-      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
-        <Card className="w-full max-w-md stats-card glow-accent">
-          <CardHeader className="text-center">
+    <div className="flex items-center justify-center min-h-screen grid-bg-pattern px-4 py-8 font-sans text-black antialiased">
+      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }} className="w-full">
+        <Card className="w-full max-w-md md:max-w-lg mx-auto bg-white border border-black/5 rounded-[2.5rem] shadow-2xl p-6 md:p-8 relative overflow-hidden">
+          <CardHeader className="text-center p-0 mb-5 md:mb-6">
             <motion.div initial={{ scale: 0.8 }} animate={{ scale: 1 }} transition={{ delay: 0.2, duration: 0.3 }}>
               <Image
                 src="/ctrlfund-logo.png"
                 alt="CtrlFund Logo"
                 width={80}
                 height={80}
-                className="mx-auto mb-4"
+                className="mx-auto mb-4 object-contain"
                 priority
               />
             </motion.div>
-            <CardTitle className="text-3xl font-bold text-[#00ADB5]">Welcome to CtrlFund</CardTitle>
-            <CardDescription className="text-[#EEEEEE]/70">
+            <CardTitle className="text-2xl md:text-3xl font-black text-black tracking-tight">Welcome to CtrlFund</CardTitle>
+            <CardDescription className="text-xs text-black/60 font-semibold mt-1">
               Manage your team's expenses and notes efficiently.
             </CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="p-0">
             <Tabs defaultValue="login" className="w-full">
-              <TabsList className="grid w-full grid-cols-2 bg-[#393E46] text-[#EEEEEE] border-[#00ADB5]">
+              <TabsList className="grid w-full grid-cols-2 bg-black/[0.03] border border-black/5 rounded-2xl p-1 mb-6">
                 <TabsTrigger
                   value="login"
-                  className="data-[state=active]:bg-[#00ADB5] data-[state=active]:text-[#222831]"
+                  className="rounded-xl text-xs font-semibold py-2.5 transition-all text-black/60 data-[state=active]:bg-black data-[state=active]:text-[#ccff00] data-[state=active]:shadow-sm"
                 >
                   Login
                 </TabsTrigger>
                 <TabsTrigger
                   value="signup"
-                  className="data-[state=active]:bg-[#00ADB5] data-[state=active]:text-[#222831]"
+                  className="rounded-xl text-xs font-semibold py-2.5 transition-all text-black/60 data-[state=active]:bg-black data-[state=active]:text-[#ccff00] data-[state=active]:shadow-sm"
                 >
                   Sign Up
                 </TabsTrigger>
               </TabsList>
-              <TabsContent value="login" className="mt-4">
+              <TabsContent value="login" className="mt-0">
                 <form onSubmit={handleLogin} className="space-y-4">
                   <div>
-                    <Label htmlFor="login-email" className="text-[#EEEEEE]">
+                    <Label htmlFor="login-email" className="text-black/75 font-semibold text-xs">
                       Email
                     </Label>
                     <Input
@@ -135,12 +135,12 @@ export default function LoginPage() {
                       placeholder="m@example.com"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
-                      className="mt-1 bg-[#393E46] text-[#EEEEEE] border-[#00ADB5] focus:ring-[#00ADB5]"
+                      className="mt-1.5 bg-black/[0.02] border border-black/5 text-black hover:bg-black/[0.04] focus:bg-white focus:ring-2 focus:ring-black rounded-xl text-xs h-10 placeholder:text-black/30 font-semibold"
                       required
                     />
                   </div>
                   <div>
-                    <Label htmlFor="login-password" className="text-[#EEEEEE]">
+                    <Label htmlFor="login-password" className="text-black/75 font-semibold text-xs">
                       Password
                     </Label>
                     <Input
@@ -149,7 +149,7 @@ export default function LoginPage() {
                       placeholder="••••••••"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
-                      className="mt-1 bg-[#393E46] text-[#EEEEEE] border-[#00ADB5] focus:ring-[#00ADB5]"
+                      className="mt-1.5 bg-black/[0.02] border border-black/5 text-black hover:bg-black/[0.04] focus:bg-white focus:ring-2 focus:ring-black rounded-xl text-xs h-10 placeholder:text-black/30"
                       required
                     />
                   </div>
@@ -159,56 +159,55 @@ export default function LoginPage() {
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ duration: 0.3 }}
                     >
-                      <Alert variant="destructive" className="bg-red-900/30 border-red-700 text-red-300 animate-pulse shadow-lg">
-                        <AlertTitle className="font-bold text-red-200">Authentication Error</AlertTitle>
-                        <AlertDescription>
-                          <div className="font-medium mb-2">{error}</div>
-                          <div className="mt-2 text-sm">
-                            <p className="font-semibold">Troubleshooting:</p>
-                            <ul className="list-disc pl-5 mt-1 space-y-1">
-                              <li>Check if your email address is entered correctly</li>
-                              <li>Verify your password (case-sensitive)</li>
-                              <li>Make sure your account is active in the system</li>
-                              <li>Try the default admin account if you're testing: admin@ctrlfund.com / admin123</li>
+                      <Alert variant="destructive" className="bg-red-50 border-red-200 text-red-700 rounded-[1.5rem] p-4 shadow-sm">
+                        <AlertTitle className="font-bold text-red-800">Authentication Error</AlertTitle>
+                        <AlertDescription className="text-xs mt-1">
+                          <div className="font-semibold text-red-700/90 mb-2">{error}</div>
+                          <div className="mt-2 text-xs border-t border-red-200/50 pt-2 text-red-700/80">
+                            <p className="font-bold">Troubleshooting:</p>
+                            <ul className="list-disc pl-4 mt-1 space-y-1 font-medium">
+                              <li>Check email address spelling</li>
+                              <li>Verify password (case-sensitive)</li>
+                              <li>Make sure account is active</li>
                             </ul>
                           </div>
                         </AlertDescription>
                       </Alert>
                     </motion.div>
                   )}
-                  <Button type="submit" className="w-full button-gradient" disabled={loading || googleLoading}>
+                  <Button type="submit" className="w-full button-gradient h-11 text-xs font-semibold rounded-xl" disabled={loading || googleLoading}>
                     {loading ? (
                       <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Logging In...
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin text-[#ccff00]" /> Logging In...
                       </>
                     ) : (
                       "Login"
                     )}
                   </Button>
 
-                  <div className="relative">
+                  <div className="relative py-2">
                     <div className="absolute inset-0 flex items-center">
-                      <span className="w-full border-t border-[#393E46]" />
+                      <span className="w-full border-t border-black/5" />
                     </div>
                     <div className="relative flex justify-center text-xs uppercase">
-                      <span className="bg-[#222831] px-2 text-[#EEEEEE]/60">Or continue with</span>
+                      <span className="bg-white px-3 text-black/40 font-semibold text-[10px] tracking-wider">Or continue with</span>
                     </div>
                   </div>
 
                   <Button
                     type="button"
                     variant="outline"
-                    className="w-full bg-white text-gray-900 border-gray-300 hover:bg-gray-50 hover:text-gray-900"
+                    className="w-full bg-white text-black border border-black/10 hover:bg-black/[0.03] transition-colors rounded-xl h-11 text-xs font-semibold shadow-sm"
                     onClick={handleGoogleLogin}
                     disabled={loading || googleLoading}
                   >
                     {googleLoading ? (
                       <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Signing in with Google...
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin text-black" /> Signing in with Google...
                       </>
                     ) : (
                       <>
-                        <svg className="mr-2 h-4 w-4" viewBox="0 0 24 24">
+                        <svg className="mr-2 h-4 w-4 text-black" viewBox="0 0 24 24">
                           <path
                             fill="currentColor"
                             d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
@@ -232,10 +231,10 @@ export default function LoginPage() {
                   </Button>
                 </form>
               </TabsContent>
-              <TabsContent value="signup" className="mt-4">
+              <TabsContent value="signup" className="mt-0">
                 <form onSubmit={handleSignup} className="space-y-4">
                   <div>
-                    <Label htmlFor="signup-name" className="text-[#EEEEEE]">
+                    <Label htmlFor="signup-name" className="text-black/75 font-semibold text-xs">
                       Full Name
                     </Label>
                     <Input
@@ -244,12 +243,12 @@ export default function LoginPage() {
                       placeholder="John Doe"
                       value={name}
                       onChange={(e) => setName(e.target.value)}
-                      className="mt-1 bg-[#393E46] text-[#EEEEEE] border-[#00ADB5] focus:ring-[#00ADB5]"
+                      className="mt-1.5 bg-black/[0.02] border border-black/5 text-black hover:bg-black/[0.04] focus:bg-white focus:ring-2 focus:ring-black rounded-xl text-xs h-10 placeholder:text-black/30 font-semibold"
                       required
                     />
                   </div>
                   <div>
-                    <Label htmlFor="signup-email" className="text-[#EEEEEE]">
+                    <Label htmlFor="signup-email" className="text-black/75 font-semibold text-xs">
                       Email
                     </Label>
                     <Input
@@ -258,12 +257,12 @@ export default function LoginPage() {
                       placeholder="m@example.com"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
-                      className="mt-1 bg-[#393E46] text-[#EEEEEE] border-[#00ADB5] focus:ring-[#00ADB5]"
+                      className="mt-1.5 bg-black/[0.02] border border-black/5 text-black hover:bg-black/[0.04] focus:bg-white focus:ring-2 focus:ring-black rounded-xl text-xs h-10 placeholder:text-black/30 font-semibold"
                       required
                     />
                   </div>
                   <div>
-                    <Label htmlFor="signup-password" className="text-[#EEEEEE]">
+                    <Label htmlFor="signup-password" className="text-black/75 font-semibold text-xs">
                       Password
                     </Label>
                     <Input
@@ -272,37 +271,37 @@ export default function LoginPage() {
                       placeholder="••••••••"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
-                      className="mt-1 bg-[#393E46] text-[#EEEEEE] border-[#00ADB5] focus:ring-[#00ADB5]"
+                      className="mt-1.5 bg-black/[0.02] border border-black/5 text-black hover:bg-black/[0.04] focus:bg-white focus:ring-2 focus:ring-black rounded-xl text-xs h-10 placeholder:text-black/30"
                       required
                     />
                   </div>
                   <div>
-                    <Label htmlFor="signup-role" className="text-[#EEEEEE]">
+                    <Label htmlFor="signup-role" className="text-black/75 font-semibold text-xs">
                       Account Type
                     </Label>
                     <Select
                       value={selectedRole}
                       onValueChange={(value: "admin" | "department-user") => setSelectedRole(value)}
                     >
-                      <SelectTrigger className="mt-1 bg-[#393E46] text-[#EEEEEE] border-[#00ADB5]">
+                      <SelectTrigger className="mt-1.5 bg-white text-black border border-black/5 hover:bg-black/[0.02] transition-colors rounded-xl text-xs h-10 font-semibold shadow-sm focus:ring-2 focus:ring-black">
                         <SelectValue placeholder="Select account type" />
                       </SelectTrigger>
-                      <SelectContent className="bg-[#222831] text-[#EEEEEE] border-[#00ADB5]">
-                        <SelectItem value="department-user" className="hover:bg-[#393E46] focus:bg-[#393E46]">
+                      <SelectContent className="bg-white text-black border border-black/5 rounded-2xl shadow-xl">
+                        <SelectItem value="department-user" className="hover:bg-black/[0.04] focus:bg-black/[0.04] text-xs font-semibold rounded-lg my-0.5 cursor-pointer">
                           <div className="flex items-center space-x-2">
-                            <Users className="h-4 w-4 text-[#00ADB5]" />
+                            <Users className="h-4 w-4 text-black/60" />
                             <div>
-                              <div className="font-medium">Department User</div>
-                              <div className="text-xs text-[#EEEEEE]/60">Standard access for department members</div>
+                              <div className="font-semibold text-black">Department User</div>
+                              <div className="text-[10px] text-black/40 font-medium">Standard access for members</div>
                             </div>
                           </div>
                         </SelectItem>
-                        <SelectItem value="admin" className="hover:bg-[#393E46] focus:bg-[#393E46]">
+                        <SelectItem value="admin" className="hover:bg-black/[0.04] focus:bg-black/[0.04] text-xs font-semibold rounded-lg my-0.5 cursor-pointer">
                           <div className="flex items-center space-x-2">
-                            <Shield className="h-4 w-4 text-[#00ADB5]" />
+                            <Shield className="h-4 w-4 text-[#ccff00]" />
                             <div>
-                              <div className="font-medium">Admin</div>
-                              <div className="text-xs text-[#EEEEEE]/60">Full administrative access</div>
+                              <div className="font-semibold text-black">Admin</div>
+                              <div className="text-[10px] text-black/40 font-medium">Full administrative access</div>
                             </div>
                           </div>
                         </SelectItem>
@@ -310,21 +309,21 @@ export default function LoginPage() {
                     </Select>
                   </div>
                   {error && (
-                    <Alert variant="destructive" className="bg-red-900/20 border-red-700 text-red-400">
-                      <AlertTitle>Error</AlertTitle>
-                      <AlertDescription>{error}</AlertDescription>
+                    <Alert variant="destructive" className="mb-4 bg-red-50 border-red-200 text-red-700 rounded-2xl p-4">
+                      <AlertTitle className="font-bold">Error</AlertTitle>
+                      <AlertDescription className="text-xs mt-0.5">{error}</AlertDescription>
                     </Alert>
                   )}
                   {signupSuccessMessage && (
-                    <Alert className="bg-green-900/20 border-green-700 text-green-400">
-                      <AlertTitle>Success!</AlertTitle>
-                      <AlertDescription>{signupSuccessMessage}</AlertDescription>
+                    <Alert className="mb-4 bg-green-50 border-green-200 text-green-700 rounded-2xl p-4">
+                      <AlertTitle className="font-bold">Success!</AlertTitle>
+                      <AlertDescription className="text-xs mt-0.5">{signupSuccessMessage}</AlertDescription>
                     </Alert>
                   )}
-                  <Button type="submit" className="w-full button-gradient" disabled={loading}>
+                  <Button type="submit" className="w-full button-gradient h-11 text-xs font-semibold rounded-xl" disabled={loading}>
                     {loading ? (
                       <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Signing Up...
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin text-[#ccff00]" /> Signing Up...
                       </>
                     ) : (
                       "Sign Up"

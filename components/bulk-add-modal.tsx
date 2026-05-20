@@ -14,7 +14,8 @@ import {
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { useTransactions } from "@/hooks/use-transactions"
+import { useTransactions } from "@/context/transaction-context"
+import { useCurrency } from "@/context/currency-context"
 import { Loader2, Upload, Plus, Trash2 } from "lucide-react"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { motion, AnimatePresence } from "framer-motion"
@@ -37,6 +38,7 @@ export function BulkAddModal() {
   const [successMessage, setSuccessMessage] = useState<string | null>(null)
 
   const { addTransaction, categories } = useTransactions()
+  const { symbol, convertToINR, currency } = useCurrency()
 
   const [transactions, setTransactions] = useState<BulkTransaction[]>([
     {
@@ -112,10 +114,12 @@ export function BulkAddModal() {
       }
 
       for (const transaction of validTransactions) {
+        const rawAmount = Number(transaction.amount)
+        // Convert entered amount from active currency back to base INR for storage
+        const amountInINR = currency === "INR" ? rawAmount : convertToINR(rawAmount)
         await addTransaction({
           title: transaction.title.trim(),
-          amount: Number(transaction.amount),
-          type: transaction.type,
+          amount: amountInINR,
           category: transaction.category,
           date: new Date(transaction.date).toISOString(),
           description: transaction.notes.trim(),
@@ -151,14 +155,14 @@ export function BulkAddModal() {
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
-        <Button variant="outline" className="border-slate-600 text-slate-300 hover:bg-slate-700 bg-transparent">
-          <Upload className="mr-2 h-4 w-4" /> Bulk Add
+        <Button className="button-gradient px-5 py-2 h-11 text-xs">
+          <Upload className="mr-2 h-4 w-4 text-[#ccff00]" /> Bulk Add
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[900px] max-h-[80vh] overflow-y-auto bg-[#222831] text-[#EEEEEE] border-[#00ADB5]">
+      <DialogContent className="sm:max-w-[900px] max-h-[80vh] overflow-y-auto bg-white text-black border border-black/5 rounded-3xl shadow-2xl p-6">
         <DialogHeader>
-          <DialogTitle className="text-[#00ADB5]">Bulk Add Transactions</DialogTitle>
-          <DialogDescription className="text-[#EEEEEE]/70">
+          <DialogTitle className="text-lg font-black text-black">Bulk Add Transactions</DialogTitle>
+          <DialogDescription className="text-xs text-black/60 font-medium">
             Add multiple transactions at once. Fill in the required fields (marked with *) for each transaction.
           </DialogDescription>
         </DialogHeader>
@@ -166,7 +170,7 @@ export function BulkAddModal() {
         <form onSubmit={handleSubmit}>
           <div className="space-y-4">
             <div className="flex items-center justify-between">
-              <div className="text-sm text-[#00ADB5] font-medium">
+              <div className="text-xs text-black/45 font-bold uppercase tracking-wider">
                 {validTransactionCount} valid transactions ready to add
               </div>
               <Button
@@ -174,16 +178,16 @@ export function BulkAddModal() {
                 onClick={addRow}
                 variant="outline"
                 size="sm"
-                className="border-[#00ADB5] text-[#00ADB5] hover:bg-[#00ADB5]/10 bg-transparent"
+                className="border-black/10 hover:border-black/20 text-black/75 hover:bg-black/5 bg-white text-xs font-bold rounded-xl"
               >
-                <Plus className="w-4 h-4 mr-1" />
+                <Plus className="w-4 h-4 mr-1 text-black/50" />
                 Add Row
               </Button>
             </div>
 
-            <div className="grid grid-cols-12 gap-2 text-xs font-medium text-[#EEEEEE]/70 border-b border-[#393E46] pb-2">
+            <div className="grid grid-cols-12 gap-2 text-[10px] uppercase font-black tracking-wider text-black/40 border-b border-black/5 pb-2">
               <div className="col-span-2">Title*</div>
-              <div className="col-span-1">Amount*</div>
+              <div className="col-span-1">Amt* ({symbol})</div>
               <div className="col-span-1">Type*</div>
               <div className="col-span-2">Category*</div>
               <div className="col-span-2">Date</div>
@@ -198,8 +202,8 @@ export function BulkAddModal() {
                   initial={{ opacity: 0, y: -10 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -10 }}
-                  className={`grid grid-cols-12 gap-2 p-2 rounded-lg border ${
-                    transaction.isValid ? "border-green-500/30 bg-green-500/5" : "border-[#393E46] bg-[#393E46]/20"
+                  className={`grid grid-cols-12 gap-2 p-2 rounded-lg border items-center ${
+                    transaction.isValid ? "border-green-500/10 bg-green-500/5" : "border-black/5 bg-black/[0.01]"
                   }`}
                 >
                   <div className="col-span-2">
@@ -207,7 +211,7 @@ export function BulkAddModal() {
                       value={transaction.title}
                       onChange={(e) => updateTransaction(transaction.id, "title", e.target.value)}
                       placeholder="Transaction title"
-                      className="bg-[#393E46] border-[#00ADB5]/30 text-[#EEEEEE] text-sm"
+                      className="bg-black/[0.02] border border-black/5 text-black hover:bg-black/[0.04] focus:bg-white focus:ring-2 focus:ring-black rounded-xl text-xs h-10"
                     />
                   </div>
 
@@ -219,7 +223,7 @@ export function BulkAddModal() {
                       value={transaction.amount}
                       onChange={(e) => updateTransaction(transaction.id, "amount", e.target.value)}
                       placeholder="0.00"
-                      className="bg-[#393E46] border-[#00ADB5]/30 text-[#EEEEEE] text-sm"
+                      className="bg-black/[0.02] border border-black/5 text-black hover:bg-black/[0.04] focus:bg-white focus:ring-2 focus:ring-black rounded-xl text-xs h-10"
                     />
                   </div>
 
@@ -228,12 +232,12 @@ export function BulkAddModal() {
                       value={transaction.type}
                       onValueChange={(value) => updateTransaction(transaction.id, "type", value)}
                     >
-                      <SelectTrigger className="bg-[#393E46] border-[#00ADB5]/30 text-[#EEEEEE] text-sm">
+                      <SelectTrigger className="bg-black/[0.02] border border-black/5 text-black hover:bg-black/[0.04] focus:bg-white focus:ring-2 focus:ring-black rounded-xl text-xs h-10">
                         <SelectValue />
                       </SelectTrigger>
-                      <SelectContent className="bg-[#393E46] border-[#00ADB5]">
-                        <SelectItem value="income">Income</SelectItem>
-                        <SelectItem value="expense">Expense</SelectItem>
+                      <SelectContent className="bg-white text-black border border-black/5 rounded-xl shadow-xl z-[999]">
+                        <SelectItem value="income" className="hover:bg-black/5 focus:bg-black/5 cursor-pointer font-semibold text-xs py-2 px-3">Income</SelectItem>
+                        <SelectItem value="expense" className="hover:bg-black/5 focus:bg-black/5 cursor-pointer font-semibold text-xs py-2 px-3">Expense</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -243,12 +247,12 @@ export function BulkAddModal() {
                       value={transaction.category}
                       onValueChange={(value) => updateTransaction(transaction.id, "category", value)}
                     >
-                      <SelectTrigger className="bg-[#393E46] border-[#00ADB5]/30 text-[#EEEEEE] text-sm">
+                      <SelectTrigger className="bg-black/[0.02] border border-black/5 text-black hover:bg-black/[0.04] focus:bg-white focus:ring-2 focus:ring-black rounded-xl text-xs h-10">
                         <SelectValue placeholder="Select category" />
                       </SelectTrigger>
-                      <SelectContent className="bg-[#393E46] border-[#00ADB5]">
+                      <SelectContent className="bg-white text-black border border-black/5 rounded-xl shadow-xl z-[999]">
                         {categories.map((category) => (
-                          <SelectItem key={category} value={category}>
+                          <SelectItem key={category} value={category} className="hover:bg-black/5 focus:bg-black/5 cursor-pointer font-semibold text-xs py-2 px-3">
                             {category}
                           </SelectItem>
                         ))}
@@ -261,7 +265,7 @@ export function BulkAddModal() {
                       type="date"
                       value={transaction.date}
                       onChange={(e) => updateTransaction(transaction.id, "date", e.target.value)}
-                      className="bg-[#393E46] border-[#00ADB5]/30 text-[#EEEEEE] text-sm"
+                      className="bg-black/[0.02] border border-black/5 text-black hover:bg-black/[0.04] focus:bg-white focus:ring-2 focus:ring-black rounded-xl text-xs h-10"
                     />
                   </div>
 
@@ -270,7 +274,7 @@ export function BulkAddModal() {
                       value={transaction.notes}
                       onChange={(e) => updateTransaction(transaction.id, "notes", e.target.value)}
                       placeholder="Optional notes"
-                      className="bg-[#393E46] border-[#00ADB5]/30 text-[#EEEEEE] text-sm"
+                      className="bg-black/[0.02] border border-black/5 text-black hover:bg-black/[0.04] focus:bg-white focus:ring-2 focus:ring-black rounded-xl text-xs h-10"
                     />
                   </div>
 
@@ -281,7 +285,7 @@ export function BulkAddModal() {
                       variant="ghost"
                       size="sm"
                       disabled={transactions.length === 1}
-                      className="text-red-400 hover:text-red-300 hover:bg-red-500/10 p-1"
+                      className="text-red-500 hover:text-red-600 hover:bg-red-50 rounded-full w-8 h-8 flex items-center justify-center p-1"
                     >
                       <Trash2 className="w-4 h-4" />
                     </Button>
@@ -292,24 +296,24 @@ export function BulkAddModal() {
           </div>
 
           {error && (
-            <Alert variant="destructive" className="mt-4 bg-red-900/20 border-red-700 text-red-400">
-              <AlertTitle>Error</AlertTitle>
-              <AlertDescription>{error}</AlertDescription>
+            <Alert variant="destructive" className="mt-4 bg-red-50 border-red-200 text-red-700 rounded-2xl p-4 shadow-sm">
+              <AlertTitle className="font-bold">Error</AlertTitle>
+              <AlertDescription className="text-xs mt-0.5">{error}</AlertDescription>
             </Alert>
           )}
 
           {successMessage && (
-            <Alert className="mt-4 bg-green-900/20 border-green-700 text-green-400">
-              <AlertTitle>Success!</AlertTitle>
-              <AlertDescription>{successMessage}</AlertDescription>
+            <Alert className="mt-4 bg-emerald-50 border-emerald-200 text-emerald-800 rounded-2xl p-4 shadow-sm">
+              <AlertTitle className="font-bold">Success!</AlertTitle>
+              <AlertDescription className="text-xs mt-0.5">{successMessage}</AlertDescription>
             </Alert>
           )}
 
           <DialogFooter className="mt-6">
-            <Button type="submit" className="button-gradient" disabled={loading || validTransactionCount === 0}>
+            <Button type="submit" className="button-gradient px-6 py-2.5 h-11 text-xs" disabled={loading || validTransactionCount === 0}>
               {loading ? (
                 <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Adding...
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin text-[#ccff00]" /> Adding...
                 </>
               ) : (
                 `Add ${validTransactionCount} Transactions`

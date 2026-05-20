@@ -66,8 +66,8 @@ export default function SharedNotePage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-[#222831] text-[#00ADB5]">
-        <Loader2 className="h-12 w-12 animate-spin" />
+      <div className="flex flex-col items-center justify-center min-h-screen grid-bg-pattern text-black">
+        <Loader2 className="h-10 w-10 animate-spin text-black stroke-[3]" />
         <span className="sr-only">Loading shared note...</span>
       </div>
     )
@@ -75,10 +75,10 @@ export default function SharedNotePage() {
 
   if (error) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-[#222831] p-4">
-        <Alert variant="destructive" className="bg-red-900/20 border-red-700 text-red-400 max-w-md">
-          <AlertTitle>Error</AlertTitle>
-          <AlertDescription>{error}</AlertDescription>
+      <div className="flex items-center justify-center min-h-screen grid-bg-pattern p-4">
+        <Alert variant="destructive" className="bg-red-50 border-red-200 text-red-700 rounded-2xl p-6 max-w-md shadow-lg">
+          <AlertTitle className="font-bold text-lg">Error</AlertTitle>
+          <AlertDescription className="text-xs mt-1 font-medium">{error}</AlertDescription>
         </Alert>
       </div>
     )
@@ -86,24 +86,24 @@ export default function SharedNotePage() {
 
   if (!note) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-[#222831] p-4 text-[#EEEEEE]">
-        <p className="text-xl">Note not found.</p>
+      <div className="flex items-center justify-center min-h-screen grid-bg-pattern p-4 text-black font-semibold text-lg">
+        <p>Note not found.</p>
       </div>
     )
   }
 
   return (
-    <div className="container mx-auto px-4 py-8 min-h-screen bg-[#222831] text-[#EEEEEE]">
-      <Card className="card-gradient border-[#00ADB5] max-w-3xl mx-auto">
-        <CardHeader className="text-center">
-          <FileText className="mx-auto h-12 w-12 text-[#00ADB5] mb-4" />
-          <CardTitle className="text-3xl font-bold text-[#00ADB5]">{note.title}</CardTitle>
-          <p className="text-sm text-[#EEEEEE]/70">
-            Created: {format(new Date(note.createdAt), "PPP")} | Last Updated: {format(new Date(note.updatedAt), "PPP")}
+    <div className="min-h-screen grid-bg-pattern font-sans antialiased text-black px-4 py-16 flex items-center justify-center">
+      <Card className="card-gradient border border-black/5 rounded-[2rem] shadow-2xl max-w-3xl w-full p-8 md:p-12 relative overflow-hidden bg-white">
+        <CardHeader className="text-center p-0 mb-8 border-b border-black/5 pb-8">
+          <FileText className="mx-auto h-12 w-12 text-[#ccff00] fill-black stroke-2 mb-4" />
+          <CardTitle className="text-3xl font-black text-black tracking-tight">{note.title}</CardTitle>
+          <p className="text-xs text-black/50 font-semibold mt-2.5">
+            Created: {format(new Date(note.createdAt), "PPP")}  •  Last Updated: {format(new Date(note.updatedAt), "PPP")}
           </p>
         </CardHeader>
-        <CardContent className="prose prose-invert max-w-none text-[#EEEEEE] leading-relaxed">
-          <p>{note.content}</p>
+        <CardContent className="p-0 text-black/85 text-sm md:text-base leading-relaxed whitespace-pre-wrap font-medium">
+          {note.content}
         </CardContent>
       </Card>
     </div>

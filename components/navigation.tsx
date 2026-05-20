@@ -1,89 +1,393 @@
 "use client"
 
 import Link from "next/link"
-import Image from "next/image"
-import { Button } from "@/components/ui/button"
+import { usePathname, useRouter } from "next/navigation"
 import { useAuth } from "@/contexts/auth-context"
-import { useRouter, usePathname } from "next/navigation"
 import { useRole } from "@/contexts/role-context"
-import { Home, DollarSign, NotebookPen, Archive, Users, LogOut, ReceiptText } from "lucide-react"
+import { useCurrency, SUPPORTED_CURRENCIES, type CurrencyCode } from "@/context/currency-context"
+import { Button } from "@/components/ui/button"
+import { 
+  DropdownMenu, 
+  DropdownMenuContent, 
+  DropdownMenuItem, 
+  DropdownMenuLabel, 
+  DropdownMenuSeparator, 
+  DropdownMenuTrigger 
+} from "@/components/ui/dropdown-menu"
+import { 
+  Home, 
+  CreditCard, 
+  FileText, 
+  Settings, 
+  Bell, 
+  FileDown, 
+  LogOut, 
+  ChevronDown,
+  Globe
+} from "lucide-react"
 
 export function Navigation() {
   const { user, logout, loading } = useAuth()
-  const { permissions } = useRole()
-  const router = useRouter()
+  const { permissions, currentRole, switchRole } = useRole()
+  const { currency, setCurrency } = useCurrency()
   const pathname = usePathname()
+  const router = useRouter()
+
+  // Don't render navigation on login page or if loading
+  if (pathname === "/login" || loading) {
+    return null
+  }
 
   const handleLogout = async () => {
     await logout()
     router.push("/login")
   }
 
-  // Don't render navigation on login page or if user is not loaded yet
-  if (pathname === "/login" || loading) {
-    return null
-  }
-
   const navItems = [
     { name: "Dashboard", href: "/dashboard", icon: Home, show: permissions.canViewDashboard },
-    { name: "Transactions", href: "/transactions", icon: DollarSign, show: permissions.canViewTransactions },
-    { name: "Receipts", href: "/receipts", icon: ReceiptText, show: permissions.canViewReceipts },
-    { name: "Notes", href: "/notes", icon: NotebookPen, show: permissions.canViewNotes },
-    { name: "Archive", href: "/archive", icon: Archive, show: permissions.canArchiveTransactions || permissions.canArchiveNotes },
-    { name: "Admin Hub", href: "/admin", icon: Users, show: permissions.canAccessAdminHub },
+    { name: "Transactions", href: "/transactions", icon: CreditCard, show: permissions.canViewTransactions },
+    { name: "Notes", href: "/notes", icon: FileText, show: permissions.canViewNotes },
+  ]
+
+  // Get Page Title based on route
+  const getPageTitle = () => {
+    if (pathname.startsWith("/transactions")) return "Finance"
+    if (pathname.startsWith("/notes")) return "Notes"
+    return "Dashboard"
+  }
+
+  // Currency groups for the dropdown
+  const currencyGroups = [
+    {
+      label: "🌍 Major Global",
+      codes: ["INR", "USD", "EUR", "GBP", "JPY", "AUD", "CAD", "CHF", "CNY"] as CurrencyCode[],
+    },
+    {
+      label: "🗺️ Middle East & Asia-Pacific",
+      codes: ["AED", "SAR", "SGD", "HKD", "KRW", "NZD"] as CurrencyCode[],
+    },
+    {
+      label: "📈 Regional & Noteworthy",
+      codes: ["RUB", "ZAR", "BRL", "TRY"] as CurrencyCode[],
+    },
   ]
 
   return (
-    <nav className="fixed top-0 left-0 right-0 z-40 bg-[#222831] text-[#EEEEEE] p-4 border-b border-[#393E46] shadow-lg flex items-center justify-between">
-      <div className="flex items-center space-x-4">
-        <Link href="/dashboard" className="flex items-center space-x-2">
-          <Image src="/ctrlfund-logo.png" alt="CtrlFund Logo" width={40} height={40} priority />
-          <span className="text-2xl font-bold text-[#00ADB5] hidden md:block">CtrlFund</span>
-        </Link>
-        <div className="hidden md:flex space-x-2">
-          {navItems.map((item) =>
-            item.show ? (
-              <Button
-                key={item.name}
-                asChild
-                variant="ghost"
-                className={`text-[#EEEEEE] hover:bg-[#00ADB5]/20 hover:text-[#00ADB5] ${
-                  pathname === item.href ? "bg-[#00ADB5]/30 text-[#00ADB5]" : ""
-                }`}
-              >
-                <Link href={item.href}>
-                  <item.icon className="mr-2 h-4 w-4" />
-                  {item.name}
-                </Link>
-              </Button>
-            ) : null,
-          )}
-        </div>
-      </div>
-
-      <div className="flex items-center space-x-3">
-        {user && (
-          <>
-            <div className="flex items-center space-x-3 text-[#EEEEEE]">
-              <div className="text-right hidden md:block">
-                <div className="text-sm font-medium">{user.name}</div>
-                <div className="text-xs text-[#00ADB5]">{user.role}</div>
-              </div>
-              <div className="w-8 h-8 bg-[#00ADB5] rounded-full flex items-center justify-center text-white font-semibold text-sm">
-                {user.name?.charAt(0)?.toUpperCase() || "U"}
+    <>
+      {/* 1. FLOATING SIDEBAR (Desktop only) */}
+      <aside className="fixed top-4 left-4 bottom-4 w-20 bg-[#0c0d0e] rounded-[24px] shadow-2xl flex flex-col items-center py-6 justify-between z-50 hidden md:flex border border-white/5">
+        <div className="flex flex-col items-center gap-10 w-full">
+          {/* Circular Double-Ring Electric Lime Logo */}
+          <Link href="/dashboard" className="relative group">
+            <div className="w-12 h-12 rounded-full border-2 border-[#ccff00] flex items-center justify-center bg-black/40 group-hover:scale-105 transition-transform duration-300">
+              <div className="w-8 h-8 rounded-full border border-dashed border-[#ccff00]/60 flex items-center justify-center">
+                <div className="w-4 h-4 rounded-full bg-[#ccff00] shadow-[0_0_10px_#ccff00]" />
               </div>
             </div>
-            <Button
-              onClick={handleLogout}
-              variant="outline"
-              className="border-slate-600 text-[#EEEEEE] hover:bg-[#00ADB5]/20 hover:text-[#00ADB5] bg-transparent border-[#393E46]"
+          </Link>
+
+          {/* Navigation Items */}
+          <nav className="flex flex-col gap-6 w-full px-2">
+            {navItems.map((item) => {
+              if (!item.show) return null
+              const isActive = pathname === item.href
+              return (
+                <Link key={item.name} href={item.href} className="relative group flex justify-center">
+                  <div className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-all duration-300 ${
+                    isActive 
+                      ? "bg-white/10 text-[#ccff00]" 
+                      : "text-white/60 hover:text-white hover:bg-white/5"
+                  }`}>
+                    <item.icon className="w-5 h-5" />
+                  </div>
+                  {/* Tooltip */}
+                  <span className="absolute left-20 bg-[#0c0d0e] text-[#ccff00] text-xs font-semibold px-3 py-1.5 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none shadow-xl border border-white/5 whitespace-nowrap z-50">
+                    {item.name}
+                  </span>
+                </Link>
+              )
+            })}
+
+          </nav>
+        </div>
+
+        {/* Bottom Messages / Settings Role Switcher */}
+        <div className="flex flex-col gap-4 w-full items-center">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button className="w-12 h-12 rounded-2xl flex items-center justify-center text-white/60 hover:text-white hover:bg-white/5 transition-all relative group">
+                <Settings className="w-5 h-5" />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent className="bg-[#0c0d0e] border-white/10 text-white rounded-xl shadow-2xl ml-4">
+              <DropdownMenuLabel className="text-[#ccff00] text-xs font-bold uppercase tracking-wider">System controls</DropdownMenuLabel>
+              <DropdownMenuSeparator className="bg-white/10" />
+              {user && (
+                <>
+                  <div className="px-2 py-1.5 text-xs text-white/50">
+                    Logged in as: <strong className="text-white block">{user.name}</strong>
+                  </div>
+                  <DropdownMenuSeparator className="bg-white/10" />
+                  <DropdownMenuLabel className="text-xs text-white/60">Switch Role permissions</DropdownMenuLabel>
+                  <DropdownMenuItem 
+                    onClick={() => switchRole("admin")}
+                    className={`text-xs hover:bg-[#ccff00]/10 hover:text-[#ccff00] cursor-pointer ${currentRole === "admin" ? "text-[#ccff00] font-bold" : "text-white"}`}
+                  >
+                    Switch to Admin
+                  </DropdownMenuItem>
+                  <DropdownMenuItem 
+                    onClick={() => switchRole("member")}
+                    className={`text-xs hover:bg-[#ccff00]/10 hover:text-[#ccff00] cursor-pointer ${currentRole === "member" ? "text-[#ccff00] font-bold" : "text-white"}`}
+                  >
+                    Switch to Member
+                  </DropdownMenuItem>
+                </>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      </aside>
+
+      {/* 2. PREMIUM HORIZONTAL TOPBAR LAYOUT */}
+      <header className="fixed top-0 left-0 right-0 h-20 z-40 bg-[#eff1e9]/80 backdrop-blur-md border-b border-black/5 flex items-center justify-between px-6 md:px-12 md:pl-28 transition-all">
+        {/* Page Title & Currency Dropdown */}
+        <div className="flex items-center gap-6">
+          <h1 className="text-2xl font-black tracking-tight text-[#0c0d0e]">
+            {getPageTitle()}
+          </h1>
+
+          {/* Global Currency Selection Toggler - grouped by region */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="bg-white hover:bg-black/5 border-black/5 text-[#0c0d0e] font-semibold rounded-full shadow-sm flex items-center gap-1 text-xs px-4"
+              >
+                <Globe className="w-3.5 h-3.5 opacity-55" />
+                <span>{SUPPORTED_CURRENCIES[currency].label}</span>
+                <ChevronDown className="w-3.5 h-3.5 opacity-55" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent className="bg-white border-black/5 text-[#0c0d0e] rounded-xl shadow-xl z-50 max-h-[70vh] overflow-y-auto w-52">
+              {currencyGroups.map((group) => (
+                <div key={group.label}>
+                  <DropdownMenuLabel className="text-black/40 text-[9px] font-black uppercase tracking-wider px-3 pt-3 pb-1">
+                    {group.label}
+                  </DropdownMenuLabel>
+                  {group.codes.map((code) => {
+                    const item = SUPPORTED_CURRENCIES[code]
+                    return (
+                      <DropdownMenuItem
+                        key={code}
+                        onClick={() => setCurrency(code)}
+                        className={`hover:bg-[#ccff00]/15 hover:text-black font-medium cursor-pointer text-xs px-3 py-2 flex items-center justify-between gap-2 ${
+                          currency === code ? "bg-[#ccff00]/25 font-bold text-black" : ""
+                        }`}
+                      >
+                        <span>{item.label}</span>
+                        {currency === code && <span className="text-[9px] font-black text-black bg-[#ccff00] px-1.5 py-0.5 rounded-full">Active</span>}
+                      </DropdownMenuItem>
+                    )
+                  })}
+                  <DropdownMenuSeparator className="bg-black/5" />
+                </div>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+
+        {/* Header Actions: Notification panel trigger, mock exports, and User profile */}
+        <div className="flex items-center gap-4">
+          {/* Notification Bell Icon */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button className="w-10 h-10 rounded-full bg-white hover:bg-black/5 flex items-center justify-center text-[#0c0d0e] shadow-sm relative transition-all duration-200 border border-black/5">
+                <Bell className="w-4.5 h-4.5" />
+                <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-red-500 shadow-[0_0_8px_#ef4444]" />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent className="bg-white border-black/5 text-[#0c0d0e] rounded-xl shadow-2xl w-80 mr-2 z-50">
+              <DropdownMenuLabel className="text-[#0c0d0e] text-xs font-bold px-3 py-2">Recent Notifications</DropdownMenuLabel>
+              <DropdownMenuSeparator className="bg-black/5" />
+              <div className="max-h-60 overflow-y-auto px-1 py-1">
+                <div className="p-3 text-xs border-b border-black/5 hover:bg-black/5 transition rounded-lg">
+                  <p className="font-semibold text-black">Seeded default mockups</p>
+                  <p className="text-black/60 mt-0.5">Paypal, Twitch, and Airbnb transactions populated in {currency}</p>
+                </div>
+                <div className="p-3 text-xs border-b border-black/5 hover:bg-black/5 transition rounded-lg">
+                  <p className="font-semibold text-black">Main Admin Logged In</p>
+                  <p className="text-black/60 mt-0.5">Successful login as administrative profile</p>
+                </div>
+                <div className="p-3 text-xs hover:bg-black/5 transition rounded-lg">
+                  <p className="font-semibold text-black">Active Currency Set</p>
+                  <p className="text-black/60 mt-0.5">Amounts mapped dynamically to {currency} ({SUPPORTED_CURRENCIES[currency].symbol})</p>
+                </div>
+              </div>
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          {/* Backup/Export Icon (Mock dropdown selector) */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button className="w-10 h-10 rounded-full bg-white hover:bg-black/5 flex items-center justify-center text-[#0c0d0e] shadow-sm transition-all duration-200 border border-black/5">
+                <FileDown className="w-4.5 h-4.5" />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent className="bg-white border-black/5 text-[#0c0d0e] rounded-xl shadow-xl w-48 mr-2 z-50">
+              <DropdownMenuLabel className="text-[10px] font-bold text-black/45 uppercase tracking-wider px-3">Export utilities</DropdownMenuLabel>
+              <DropdownMenuSeparator className="bg-black/5" />
+              <DropdownMenuItem onClick={() => router.push("/dashboard")} className="text-xs py-2 px-3 cursor-pointer hover:bg-black/5">
+                Go to Dashboard
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => router.push("/transactions")} className="text-xs py-2 px-3 cursor-pointer hover:bg-black/5">
+                Finance Hub
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => router.push("/notes")} className="text-xs py-2 px-3 cursor-pointer hover:bg-black/5">
+                Export Notes to PDF
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          {/* User Profile Badge (Joseph Mitchell) */}
+          {user && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button className="flex items-center gap-3 pl-3 pr-2 py-1 rounded-full bg-white hover:bg-black/5 shadow-sm transition-all duration-200 border border-black/5 cursor-pointer">
+                  <span className="text-xs font-bold text-[#0c0d0e] hidden md:inline">
+                    {user.name}
+                  </span>
+                  <div className="w-7 h-7 rounded-full bg-[#ccff00] text-black font-black text-xs flex items-center justify-center shadow-inner">
+                    {user.name?.split(" ").map(w => w.charAt(0)).join("") || "JM"}
+                  </div>
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent className="bg-white border-black/5 text-[#0c0d0e] rounded-xl shadow-2xl w-56 mr-2 z-50">
+                <DropdownMenuLabel className="font-bold">{user.name}</DropdownMenuLabel>
+                <div className="px-3 pb-2 text-[10px] text-black/50 truncate">{user.email}</div>
+                <DropdownMenuSeparator className="bg-black/5" />
+                
+                <div className="px-3 py-1.5 text-[10px] uppercase font-black text-[#ccff00] bg-black rounded-lg mx-2 my-1 text-center">
+                  Role: {user.role === "admin" ? "Administrator" : "Department user"}
+                </div>
+                
+                <DropdownMenuSeparator className="bg-black/5" />
+                
+                <DropdownMenuItem 
+                  onClick={() => router.push("/dashboard")}
+                  className="text-xs py-2 px-3 cursor-pointer hover:bg-black/5"
+                >
+                  <Home className="w-3.5 h-3.5 mr-2 opacity-70" /> Dashboard Overview
+                </DropdownMenuItem>
+
+                <DropdownMenuItem 
+                  onClick={handleLogout}
+                  className="text-xs py-2 px-3 cursor-pointer text-red-500 hover:bg-red-50 hover:text-red-600 font-semibold"
+                >
+                  <LogOut className="w-3.5 h-3.5 mr-2" /> Logout
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
+        </div>
+      </header>
+
+      {/* 3. MOBILE BOTTOM NAVIGATION BAR (unique pill-style floating nav) */}
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 px-4 pb-4 pt-0">
+        <div className="bg-[#0c0d0e]/95 backdrop-blur-xl border border-white/10 rounded-[28px] shadow-[0_-8px_40px_rgba(0,0,0,0.35)] flex items-center justify-around px-2 py-2">
+          {navItems.filter(i => i.show).map((item) => {
+            const isActive = pathname === item.href
+            return (
+              <Link
+                key={item.name}
+                href={item.href}
+                className={`flex flex-col items-center gap-1 px-5 py-2.5 rounded-[20px] transition-all duration-300 ${
+                  isActive
+                    ? "bg-[#ccff00] text-black"
+                    : "text-white/50 hover:text-white"
+                }`}
+              >
+                <item.icon className={`w-5 h-5 ${isActive ? "text-black" : ""}`} />
+                <span className={`text-[9px] font-black uppercase tracking-wider ${isActive ? "text-black" : ""}`}>
+                  {item.name}
+                </span>
+              </Link>
+            )
+          })}
+
+          {/* Mobile currency quick-toggle */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button className="flex flex-col items-center gap-1 px-4 py-2.5 rounded-[20px] text-white/50 hover:text-white transition-all">
+                <Globe className="w-5 h-5" />
+                <span className="text-[9px] font-black uppercase tracking-wider">{currency}</span>
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent 
+              side="top"
+              className="bg-[#0c0d0e] border-white/10 text-white rounded-2xl shadow-2xl mb-2 max-h-72 overflow-y-auto w-44"
             >
-              <LogOut className="mr-2 h-4 w-4" />
-              Logout
-            </Button>
-          </>
-        )}
-      </div>
-    </nav>
+              <DropdownMenuLabel className="text-[#ccff00] text-[9px] font-black uppercase tracking-wider px-3 py-2">
+                Select Currency
+              </DropdownMenuLabel>
+              <DropdownMenuSeparator className="bg-white/10" />
+              {(Object.keys(SUPPORTED_CURRENCIES) as CurrencyCode[]).map((code) => {
+                const item = SUPPORTED_CURRENCIES[code]
+                return (
+                  <DropdownMenuItem
+                    key={code}
+                    onClick={() => setCurrency(code)}
+                    className={`text-xs px-3 py-2 cursor-pointer hover:bg-[#ccff00]/10 hover:text-[#ccff00] flex items-center justify-between ${
+                      currency === code ? "text-[#ccff00] font-bold" : "text-white/80"
+                    }`}
+                  >
+                    <span>{item.symbol} {code}</span>
+                    {currency === code && <span className="w-1.5 h-1.5 rounded-full bg-[#ccff00]" />}
+                  </DropdownMenuItem>
+                )
+              })}
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          {/* Mobile user menu */}
+          {user && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button className="flex flex-col items-center gap-1 px-4 py-2.5 rounded-[20px] text-white/50 hover:text-white transition-all">
+                  <div className="w-5 h-5 rounded-full bg-[#ccff00] text-black text-[8px] font-black flex items-center justify-center">
+                    {user.name?.split(" ").map(w => w.charAt(0)).join("") || "JM"}
+                  </div>
+                  <span className="text-[9px] font-black uppercase tracking-wider">You</span>
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent
+                side="top"
+                className="bg-[#0c0d0e] border-white/10 text-white rounded-2xl shadow-2xl mb-2 w-52"
+              >
+                <DropdownMenuLabel className="text-white font-bold">{user.name}</DropdownMenuLabel>
+                <div className="px-3 pb-2 text-[10px] text-white/40 truncate">{user.email}</div>
+                <DropdownMenuSeparator className="bg-white/10" />
+                <div className="px-3 py-1.5 text-[9px] uppercase font-black text-[#ccff00] bg-white/5 rounded-lg mx-2 my-1 text-center">
+                  {user.role === "admin" ? "Administrator" : "Department user"}
+                </div>
+                <DropdownMenuSeparator className="bg-white/10" />
+                <DropdownMenuItem
+                  onClick={() => switchRole(currentRole === "admin" ? "member" : "admin")}
+                  className="text-xs py-2 px-3 cursor-pointer text-white/70 hover:bg-[#ccff00]/10 hover:text-[#ccff00]"
+                >
+                  <Settings className="w-3.5 h-3.5 mr-2" /> Switch Role
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={handleLogout}
+                  className="text-xs py-2 px-3 cursor-pointer text-red-400 hover:bg-red-500/10 hover:text-red-400 font-semibold"
+                >
+                  <LogOut className="w-3.5 h-3.5 mr-2" /> Logout
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
+        </div>
+      </nav>
+    </>
   )
 }

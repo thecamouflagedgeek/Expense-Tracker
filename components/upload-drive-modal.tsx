@@ -81,55 +81,55 @@ export function UploadDriveModal() {
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
-        <Button variant="outline" className="border-slate-600 text-slate-300 hover:bg-slate-700 bg-transparent">
-          <FolderUp className="mr-2 h-4 w-4" /> Upload to Drive
+        <Button variant="outline" className="border-black/10 text-black hover:bg-black/[0.03] bg-white rounded-xl h-11 px-5 text-xs font-semibold">
+          <FolderUp className="mr-2 h-4 w-4 text-[#ccff00]" /> Upload to Drive
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[425px] bg-[#222831] text-[#EEEEEE] border-[#00ADB5]">
+      <DialogContent className="sm:max-w-[425px] bg-white text-black border border-black/5 rounded-3xl shadow-2xl p-6">
         <DialogHeader>
-          <DialogTitle className="text-[#00ADB5]">Upload to Google Drive</DialogTitle>
-          <DialogDescription className="text-[#EEEEEE]/70">
+          <DialogTitle className="text-lg font-black text-black">Upload to Google Drive</DialogTitle>
+          <DialogDescription className="text-xs text-black/60 font-medium">
             Upload a file directly to your Google Drive.
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit}>
           <div className="grid gap-4 py-4">
             <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="drive-file" className="text-right text-[#EEEEEE]">
+              <Label htmlFor="drive-file" className="text-right text-black/75 font-semibold text-xs">
                 File
               </Label>
               <Input
                 id="drive-file"
                 type="file"
                 onChange={handleFileChange}
-                className="col-span-3 bg-[#393E46] text-[#EEEEEE] border-[#00ADB5] file:text-[#00ADB5] file:bg-[#393E46] file:border-[#00ADB5] file:border file:rounded-md file:px-3 file:py-1 file:mr-2"
+                className="col-span-3 bg-black/[0.02] border border-black/5 text-black hover:bg-black/[0.04] focus:bg-white focus:ring-2 focus:ring-black rounded-xl text-xs h-10 file:bg-black/5 file:border-0 file:text-black file:text-xs file:font-semibold file:px-3 file:py-1 file:rounded-md file:mr-2 hover:file:bg-black/10"
                 required
               />
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="folder-name" className="text-right text-[#EEEEEE]">
+              <Label htmlFor="folder-name" className="text-right text-black/75 font-semibold text-xs">
                 Folder
               </Label>
               <Input
                 id="folder-name"
                 value={folderName}
                 onChange={(e) => setFolderName(e.target.value)}
-                className="col-span-3 bg-[#393E46] text-[#EEEEEE] border-[#00ADB5]"
+                className="col-span-3 bg-black/[0.02] border border-black/5 text-black hover:bg-black/[0.04] focus:bg-white focus:ring-2 focus:ring-black rounded-xl text-xs h-10 placeholder:text-black/30"
                 placeholder="e.g., My Receipts"
               />
             </div>
           </div>
           {error && (
-            <Alert variant="destructive" className="mb-4 bg-red-900/20 border-red-700 text-red-400">
-              <AlertTitle>Error</AlertTitle>
-              <AlertDescription>{error}</AlertDescription>
+            <Alert variant="destructive" className="mb-4 bg-red-50 border-red-200 text-red-700 rounded-2xl p-4">
+              <AlertTitle className="font-bold">Error</AlertTitle>
+              <AlertDescription className="text-xs mt-0.5">{error}</AlertDescription>
             </Alert>
           )}
           <DialogFooter>
-            <Button type="submit" className="button-gradient" disabled={loading}>
+            <Button type="submit" className="button-gradient px-6 py-2.5 h-11 text-xs" disabled={loading}>
               {loading ? (
                 <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Uploading...
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin text-[#ccff00]" /> Uploading...
                 </>
               ) : (
                 "Upload to Drive"

@@ -44,16 +44,16 @@ export function NoteEditor({ initialContent, onSave, isSaving }: NoteEditorProps
         value={content}
         onChange={handleContentChange}
         placeholder="Start writing your note here..."
-        className="min-h-[300px] bg-[#393E46] text-[#EEEEEE] border-[#00ADB5] focus:ring-[#00ADB5] resize-none overflow-hidden"
+        className="min-h-[300px] bg-black/[0.02] border border-black/5 text-black hover:bg-black/[0.04] focus:bg-white focus:ring-2 focus:ring-black rounded-2xl p-4 text-xs font-medium placeholder:text-black/30 resize-none overflow-hidden"
       />
-      <Button onClick={handleSaveClick} className="button-gradient self-end" disabled={isSaving}>
+      <Button onClick={handleSaveClick} className="button-gradient self-end px-5 py-2.5 h-11 text-xs" disabled={isSaving}>
         {isSaving ? (
           <>
-            <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Saving...
+            <Loader2 className="mr-2 h-4 w-4 animate-spin text-[#ccff00]" /> Saving...
           </>
         ) : (
           <>
-            <Save className="mr-2 h-4 w-4" /> Save Note
+            <Save className="mr-2 h-4 w-4 text-[#ccff00]" /> Save Note
           </>
         )}
       </Button>

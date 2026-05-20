@@ -36,28 +36,28 @@ export function TransactionList({ transactions }: TransactionListProps) {
 
   if (transactions.length === 0) {
     return (
-      <div className="text-center text-[#EEEEEE]/70 py-8">
-        <p>No transactions found matching your criteria.</p>
+      <div className="text-center text-black/45 py-12">
+        <p className="text-sm font-semibold">No transactions found matching your criteria.</p>
       </div>
     )
   }
 
   return (
-    <Card className="card-gradient border-[#393E46]">
-      <CardHeader>
-        <CardTitle className="text-xl text-[#00ADB5]">All Transactions</CardTitle>
+    <Card className="card-gradient border-none p-6">
+      <CardHeader className="p-0 mb-6">
+        <CardTitle className="text-base font-bold text-black tracking-tight">All Transactions</CardTitle>
       </CardHeader>
-      <CardContent>
+      <CardContent className="p-0">
         <div className="overflow-x-auto">
           <Table>
             <TableHeader>
-              <TableRow className="border-[#393E46]">
-                <TableHead className="text-[#00ADB5]">Title</TableHead>
-                <TableHead className="text-[#00ADB5]">Description</TableHead>
-                <TableHead className="text-[#00ADB5]">Category</TableHead>
-                <TableHead className="text-[#00ADB5]">Amount</TableHead>
-                <TableHead className="text-[#00ADB5]">Date</TableHead>
-                <TableHead className="text-[#00ADB5] text-right">Actions</TableHead>
+              <TableRow className="border-black/5 hover:bg-transparent">
+                <TableHead className="text-black/45 font-bold text-[10px] uppercase tracking-wider">Title</TableHead>
+                <TableHead className="text-black/45 font-bold text-[10px] uppercase tracking-wider">Description</TableHead>
+                <TableHead className="text-black/45 font-bold text-[10px] uppercase tracking-wider">Category</TableHead>
+                <TableHead className="text-black/45 font-bold text-[10px] uppercase tracking-wider">Amount</TableHead>
+                <TableHead className="text-black/45 font-bold text-[10px] uppercase tracking-wider">Date</TableHead>
+                <TableHead className="text-black/45 font-bold text-[10px] uppercase tracking-wider text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -69,7 +69,7 @@ export function TransactionList({ transactions }: TransactionListProps) {
                       size="icon"
                       onClick={() => handleArchive(transaction.id, transaction.isArchived)}
                       disabled={archivingItemId === transaction.id}
-                      className="text-[#00ADB5] hover:bg-[#00ADB5]/20"
+                      className="text-black/50 hover:text-black hover:bg-black/5 rounded-full w-8 h-8"
                       title={transaction.isArchived ? "Unarchive Transaction" : "Archive Transaction"}
                     >
                       {archivingItemId === transaction.id ? (

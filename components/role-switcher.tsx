@@ -12,21 +12,21 @@ export function RoleSwitcher() {
   // Do not render if user is not logged in or still loading
   if (!user || authLoading || roleLoading) {
     return (
-      <div className="flex items-center text-[#00ADB5]">
-        <Loader2 className="h-4 w-4 animate-spin mr-2" />
-        <span className="text-sm text-[#EEEEEE]/70">Loading roles...</span>
+      <div className="flex items-center text-black font-semibold text-xs">
+        <Loader2 className="h-4 w-4 animate-spin mr-2 text-black" />
+        <span className="text-black/60 font-medium">Loading roles...</span>
       </div>
     )
   }
 
   return (
     <Select value={currentRole} onValueChange={switchRole}>
-      <SelectTrigger className="w-[180px] bg-[#393E46] text-[#EEEEEE] border-[#00ADB5]">
+      <SelectTrigger className="w-[180px] bg-white text-black border border-black/5 hover:bg-black/[0.02] transition-colors rounded-xl text-xs h-10 font-semibold shadow-sm focus:ring-2 focus:ring-black">
         <SelectValue placeholder="Select Role" />
       </SelectTrigger>
-      <SelectContent className="bg-[#222831] text-[#EEEEEE] border-[#00ADB5]">
+      <SelectContent className="bg-white text-black border border-black/5 rounded-2xl shadow-xl">
         {availableRoles.map((role) => (
-          <SelectItem key={role} value={role} className="hover:bg-[#393E46] focus:bg-[#393E46]">
+          <SelectItem key={role} value={role} className="hover:bg-black/[0.04] focus:bg-black/[0.04] text-xs font-semibold rounded-lg my-0.5 cursor-pointer">
             {role.charAt(0).toUpperCase() + role.slice(1)}
           </SelectItem>
         ))}

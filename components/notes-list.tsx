@@ -52,8 +52,8 @@ export function NotesList() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64 text-[#00ADB5]">
-        <Loader2 className="h-8 w-8 animate-spin" />
+      <div className="flex items-center justify-center h-64 text-[#ccff00]">
+        <Loader2 className="h-8 w-8 animate-spin text-black" />
         <span className="sr-only">Loading notes...</span>
       </div>
     )
@@ -61,16 +61,16 @@ export function NotesList() {
 
   if (error) {
     return (
-      <Alert variant="destructive" className="bg-red-900/20 border-red-700 text-red-400">
-        <AlertTitle>Error</AlertTitle>
-        <AlertDescription>Error loading notes: {error}</AlertDescription>
+      <Alert variant="destructive" className="bg-red-50 border-red-200 text-red-700 rounded-2xl p-4">
+        <AlertTitle className="font-bold">Error</AlertTitle>
+        <AlertDescription className="text-xs mt-0.5">Error loading notes: {error}</AlertDescription>
       </Alert>
     )
   }
 
   if (notes.length === 0) {
     return (
-      <div className="text-center text-[#EEEEEE]/70 py-8">
+      <div className="text-center text-black/45 font-semibold py-12 bg-white border border-black/5 rounded-3xl shadow-sm">
         <p>No notes found. Create your first note!</p>
       </div>
     )
@@ -78,21 +78,21 @@ export function NotesList() {
 
   return (
     <>
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-6 md:grid-cols-2">
         {notes.map((note) => (
-          <Card key={note.id} className="card-gradient border-[#393E46] flex flex-col">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-xl text-[#00ADB5] flex items-center justify-between">
+          <Card key={note.id} className="card-gradient border-none flex flex-col shadow-sm">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base font-extrabold text-black flex items-center justify-between gap-2">
                 <span className="truncate">{note.title}</span>
-                <div className="flex space-x-1">
+                <div className="flex items-center gap-1">
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="text-[#00ADB5] hover:bg-[#00ADB5]/20"
+                    className="text-black/50 hover:text-black hover:bg-black/5 rounded-full w-8 h-8"
                     asChild
                     title="Edit Note"
                   >
-                    <Link href={`/notes/${note.id}`}>
+                    <Link href={`/notes?id=${note.id}`}>
                       <Edit className="h-4 w-4" />
                       <span className="sr-only">Edit Note</span>
                     </Link>
@@ -100,8 +100,8 @@ export function NotesList() {
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="text-[#00ADB5] hover:bg-[#00ADB5]/20"
-                    onClick={() => handleShare(note.id)}
+                    className="text-black/50 hover:text-black hover:bg-black/5 rounded-full w-8 h-8"
+                    onClick={() => handleShare(note.id!)}
                     title="Share Note"
                   >
                     <Share2 className="h-4 w-4" />
@@ -110,13 +110,13 @@ export function NotesList() {
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="text-red-400 hover:bg-red-900/20"
-                    onClick={() => handleDelete(note.id)}
+                    className="text-red-500 hover:text-red-600 hover:bg-red-50 rounded-full w-8 h-8"
+                    onClick={() => handleDelete(note.id!)}
                     disabled={deletingNoteId === note.id}
                     title="Delete Note"
                   >
                     {deletingNoteId === note.id ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
+                      <Loader2 className="h-4 w-4 animate-spin text-red-500" />
                     ) : (
                       <Trash2 className="h-4 w-4" />
                     )}
@@ -124,18 +124,16 @@ export function NotesList() {
                   </Button>
                 </div>
               </CardTitle>
-              <p className="text-xs text-[#EEEEEE]/70">Last updated: {format(new Date(note.updatedAt), "PPP")}</p>
+              <p className="text-[10px] font-bold text-black/40 uppercase tracking-tight">Last updated: {format(new Date(note.updatedAt), "PPP")}</p>
             </CardHeader>
             <CardContent className="flex-grow flex flex-col justify-between">
-              <p className="text-sm text-[#EEEEEE] line-clamp-4 mb-4">{note.content}</p>
+              <p className="text-xs text-black/60 font-medium leading-relaxed line-clamp-4 mb-4">{note.content}</p>
               <Button
                 asChild
-                variant="outline"
-                size="sm"
-                className="self-end border-slate-600 text-slate-300 hover:bg-slate-700 bg-transparent"
+                className="self-end button-gradient px-4 py-2 h-9 text-xs"
               >
-                <Link href={`/notes/${note.id}`}>
-                  <FileText className="mr-2 h-4 w-4" /> Read More
+                <Link href={`/notes?id=${note.id}`}>
+                  <FileText className="mr-1.5 h-3.5 w-3.5 text-[#ccff00]" /> Read More
                 </Link>
               </Button>
             </CardContent>
@@ -144,28 +142,28 @@ export function NotesList() {
       </div>
 
       <Dialog open={shareModalOpen} onOpenChange={setShareModalOpen}>
-        <DialogContent className="sm:max-w-[425px] bg-[#222831] text-[#EEEEEE] border-[#00ADB5]">
+        <DialogContent className="sm:max-w-[425px] bg-white text-black border border-black/5 rounded-3xl shadow-2xl p-6">
           <DialogHeader>
-            <DialogTitle className="text-[#00ADB5]">Share Note</DialogTitle>
-            <DialogDescription className="text-[#EEEEEE]/70">
+            <DialogTitle className="text-lg font-black text-black">Share Note</DialogTitle>
+            <DialogDescription className="text-xs text-black/60 font-medium">
               Anyone with this link will be able to view this note.
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
             <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="share-link" className="text-right text-[#EEEEEE]">
+              <Label htmlFor="share-link" className="text-right text-black/75 font-semibold text-xs">
                 Link
               </Label>
               <Input
                 id="share-link"
                 value={sharedNoteUrl}
                 readOnly
-                className="col-span-3 bg-[#393E46] text-[#EEEEEE] border-[#00ADB5]"
+                className="col-span-3 bg-black/[0.02] border border-black/5 text-black hover:bg-black/[0.04] focus:bg-white focus:ring-2 focus:ring-black rounded-xl text-xs h-10"
               />
             </div>
           </div>
           <DialogFooter>
-            <Button onClick={copyToClipboard} className="button-gradient">
+            <Button onClick={copyToClipboard} className="button-gradient px-6 py-2.5 h-11 text-xs">
               Copy Link
             </Button>
           </DialogFooter>

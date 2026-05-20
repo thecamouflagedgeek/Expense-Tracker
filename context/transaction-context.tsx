@@ -4,8 +4,8 @@ import type React from "react"
 import { createContext, useState, useEffect, useContext } from "react"
 import { useAuth } from "@/contexts/auth-context"
 import { useNotification } from "@/contexts/notification-context"
-import { db } from "@/lib/firebaseConfig"
-import { collection, addDoc, updateDoc, deleteDoc, doc, onSnapshot, query, where, orderBy } from "firebase/firestore"
+
+const TRANSACTIONS_KEY = 'ctrlfund_transactions'
 
 export type Transaction = {
   id: string
@@ -51,33 +51,103 @@ export const TransactionProvider: React.FC<{ children: React.ReactNode }> = ({ c
     setLoading(true)
     setError(null)
 
-    // Set up real-time listener for transactions
-    const transactionsQuery = query(
-      collection(db, "transactions"),
-      where("userId", "==", user.id),
-      orderBy("createdAt", "desc")
-    )
-
-    const unsubscribe = onSnapshot(
-      transactionsQuery,
-      (snapshot) => {
-        const transactionsData = snapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data()
-        })) as Transaction[]
-        
-        setAllTransactions(transactionsData)
-        setLoading(false)
-      },
-      (error) => {
-        console.error("Error loading transactions:", error)
-        setError("Failed to load transactions")
-        setLoading(false)
+    // Load transactions from localStorage
+    try {
+      const stored = localStorage.getItem(TRANSACTIONS_KEY)
+      let allTransactionsData: Transaction[] = stored ? JSON.parse(stored) : []
+      
+      // Migrate old over-scaled seeds back to real INR amounts
+      let migrated = false
+      allTransactionsData = allTransactionsData.map(t => {
+        if (t.userId === user.id && t.id.startsWith("trans-mock-")) {
+          if (t.id === "trans-mock-1" && t.amount !== 10.67)  { t.amount = 10.67;  migrated = true; }
+          if (t.id === "trans-mock-2" && t.amount !== 12.01)  { t.amount = 12.01;  migrated = true; }
+          if (t.id === "trans-mock-3" && t.amount !== 112.43) { t.amount = 112.43; migrated = true; }
+          if (t.id === "trans-mock-4" && t.amount !== 16.00)  { t.amount = 16.00;  migrated = true; }
+          if (t.id === "trans-mock-5" && t.amount !== 112.43) { t.amount = 112.43; migrated = true; }
+        }
+        return t
+      })
+      if (migrated) {
+        localStorage.setItem(TRANSACTIONS_KEY, JSON.stringify(allTransactionsData))
       }
-    )
 
-    // Cleanup subscription on unmount
-    return () => unsubscribe()
+      // Filter by user
+      let userTransactions = allTransactionsData.filter(t => t.userId === user.id)
+      
+      // If user has no transactions, seed the mockup ones in INR!
+      if (userTransactions.length === 0) {
+        const seedTransactions: Transaction[] = [
+          {
+            id: `trans-mock-1`,
+            title: "Paypal",
+            amount: 10.67, // base INR – converts live to any selected currency
+            category: "Other",
+            date: "2026-07-08T11:55:00.000Z",
+            description: "PayPal Online Transfer",
+            userId: user.id,
+            isArchived: false,
+          },
+          {
+            id: `trans-mock-2`,
+            title: "Twitch",
+            amount: 12.01, // base INR
+            category: "Bills",
+            date: "2026-07-07T19:50:00.000Z",
+            description: "Twitch Premium Subscription",
+            userId: user.id,
+            isArchived: false,
+          },
+          {
+            id: `trans-mock-3`,
+            title: "Airbnb",
+            amount: 112.43, // base INR
+            category: "Home goods",
+            date: "2026-07-06T11:17:00.000Z",
+            description: "Airbnb lodging stays",
+            userId: user.id,
+            isArchived: false,
+          },
+          {
+            id: `trans-mock-4`,
+            title: "Dribbble",
+            amount: 16.00, // base INR
+            category: "Sporting goods",
+            date: "2026-07-06T09:35:00.000Z",
+            description: "Dribbble Pro Account subscription",
+            userId: user.id,
+            isArchived: false,
+          },
+          {
+            id: `trans-mock-5`,
+            title: "Airbnb",
+            amount: 112.43, // base INR
+            category: "Home goods",
+            date: "2026-07-06T11:17:00.000Z",
+            description: "Airbnb lodging stays #2",
+            userId: user.id,
+            isArchived: false,
+          }
+        ]
+        
+        // Append seed transactions to the stored list
+        allTransactionsData = [...allTransactionsData, ...seedTransactions]
+        localStorage.setItem(TRANSACTIONS_KEY, JSON.stringify(allTransactionsData))
+        userTransactions = seedTransactions
+      }
+
+      // Sort by date
+      const sortedTransactions = userTransactions.sort(
+        (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
+      )
+      
+      setAllTransactions(sortedTransactions)
+      setLoading(false)
+    } catch (error) {
+      console.error("Error loading transactions:", error)
+      setError("Failed to load transactions")
+      setLoading(false)
+    }
   }, [user])
 
   useEffect(() => {
@@ -105,19 +175,23 @@ export const TransactionProvider: React.FC<{ children: React.ReactNode }> = ({ c
     }
 
     try {
-      const newTransaction = {
+      const newTransaction: Transaction = {
         ...transaction,
+        id: `trans-${Date.now()}`,
         userId: user.id,
         isArchived: false,
-        createdAt: new Date().toISOString(),
       }
 
-      // Add to Firestore
-      const docRef = await addDoc(collection(db, "transactions"), newTransaction)
+      // Load all transactions
+      const stored = localStorage.getItem(TRANSACTIONS_KEY)
+      const allTransactions: Transaction[] = stored ? JSON.parse(stored) : []
       
-      // Update local state with the new transaction (including the Firestore ID)
-      const transactionWithId = { ...newTransaction, id: docRef.id }
-      setAllTransactions((prev) => [...prev, transactionWithId])
+      // Add new transaction
+      allTransactions.push(newTransaction)
+      localStorage.setItem(TRANSACTIONS_KEY, JSON.stringify(allTransactions))
+      
+      // Update local state
+      setAllTransactions((prev) => [...prev, newTransaction])
       
       addNotification({
         message: `Transaction "${transaction.title}" added successfully!`,
@@ -140,8 +214,15 @@ export const TransactionProvider: React.FC<{ children: React.ReactNode }> = ({ c
     }
 
     try {
-      // Update in Firestore
-      await updateDoc(doc(db, "transactions", id), updatedFields)
+      // Load all transactions
+      const stored = localStorage.getItem(TRANSACTIONS_KEY)
+      const allTransactions: Transaction[] = stored ? JSON.parse(stored) : []
+      
+      // Update transaction
+      const updatedTransactions = allTransactions.map((t) =>
+        t.id === id ? { ...t, ...updatedFields } : t
+      )
+      localStorage.setItem(TRANSACTIONS_KEY, JSON.stringify(updatedTransactions))
       
       // Update local state
       setAllTransactions((prev) => prev.map((t) => (t.id === id ? { ...t, ...updatedFields } : t)))
@@ -167,8 +248,13 @@ export const TransactionProvider: React.FC<{ children: React.ReactNode }> = ({ c
     }
 
     try {
-      // Delete from Firestore
-      await deleteDoc(doc(db, "transactions", id))
+      // Load all transactions
+      const stored = localStorage.getItem(TRANSACTIONS_KEY)
+      const allTransactions: Transaction[] = stored ? JSON.parse(stored) : []
+      
+      // Remove transaction
+      const updatedTransactions = allTransactions.filter((t) => t.id !== id)
+      localStorage.setItem(TRANSACTIONS_KEY, JSON.stringify(updatedTransactions))
       
       // Update local state
       setAllTransactions((prev) => prev.filter((t) => t.id !== id))
