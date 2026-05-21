@@ -22,12 +22,15 @@ import {
   FileText, 
   File, 
   Plus, 
-  Send, 
   Wifi, 
   ArrowRight,
   Sparkles,
-  TrendingUp,
-  CreditCard
+  Users,
+  Briefcase,
+  ClipboardList,
+  Archive,
+  Activity,
+  UserCog
 } from "lucide-react"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { exportToExcel, exportToCSV, exportToPDF } from "@/utils/export-utils"
@@ -36,17 +39,27 @@ export default function DashboardPage() {
   const { transactions, loading: transactionsLoading, error: transactionsError } = useTransactions()
   const { notes, loading: notesLoading, error: notesError } = useNotes()
   const { users, loading: usersLoading, error: usersError } = useAuth()
-  const { permissions } = useRole()
-  const { format, currency, symbol } = useCurrency()
+  const { permissions, currentRole } = useRole()
+  const { format, symbol } = useCurrency()
+  const { addNotification } = useNotification()
+
+  const allocationBaseInINR = 300000
 
   const search = useSearchParams()
   const router = useRouter()
   const view = (search.get("view") === "archived" ? "archived" : "active") as "active" | "archived"
 
+  const activeTransactions = useMemo(() => {
+    return transactions.filter((t) => !t.isArchived)
+  }, [transactions])
+
+  const archivedTransactions = useMemo(() => {
+    return transactions.filter((t) => Boolean(t.isArchived))
+  }, [transactions])
+
   const filteredTransactions = useMemo(() => {
-    const targetArchived = view === "archived"
-    return transactions.filter((t) => Boolean(t.isArchived) === targetArchived)
-  }, [transactions, view])
+    return view === "archived" ? archivedTransactions : activeTransactions
+  }, [activeTransactions, archivedTransactions, view])
 
   const loading = transactionsLoading || notesLoading || usersLoading
   const error = transactionsError || notesError || usersError
@@ -55,12 +68,41 @@ export default function DashboardPage() {
     return filteredTransactions.reduce((sum, t) => sum + t.amount, 0)
   }, [filteredTransactions])
 
+  const totalActiveExpenses = useMemo(() => {
+    return activeTransactions.reduce((sum, t) => sum + t.amount, 0)
+  }, [activeTransactions])
+
   const averageExpense = useMemo(() => {
     return filteredTransactions.length > 0 ? totalExpenses / filteredTransactions.length : 0
   }, [filteredTransactions, totalExpenses])
 
   const totalNotes = notes.length
+  const archivedNotes = notes.filter((note) => note.isArchived).length
   const activeUsers = users.filter((user) => user.isActive).length
+  const pendingUsers = users.filter((user) => !user.isActive)
+
+  const workspaceAllocation = allocationBaseInINR * Math.max(activeUsers, 1)
+  const workspaceRemaining = Math.max(0, workspaceAllocation - totalActiveExpenses)
+  const transferCount = activeTransactions.filter((t) => t.category.toLowerCase() === "transfer").length
+
+  const recentActivity = useMemo(() => {
+    const noteItems = notes.map((note) => ({
+      type: "note",
+      title: note.title,
+      timestamp: note.updatedAt,
+      meta: note.isArchived ? "Archived" : "Updated",
+    }))
+    const transactionItems = activeTransactions.map((transaction) => ({
+      type: "transaction",
+      title: transaction.title,
+      timestamp: transaction.date,
+      meta: format(transaction.amount),
+    }))
+
+    return [...noteItems, ...transactionItems]
+      .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
+      .slice(0, 6)
+  }, [activeTransactions, notes, format])
 
   const monthlySpendingData = useMemo(() => {
     const monthlyData: { [key: string]: number } = {}
@@ -122,6 +164,15 @@ export default function DashboardPage() {
         </div>
       </div>
     )
+  }
+
+  const isAdminView = currentRole === "admin"
+
+  const handleAdminAction = (label: string) => {
+    addNotification({
+      message: `${label} is queued for setup.`,
+      type: "info",
+    })
   }
 
   return (
@@ -193,28 +244,230 @@ export default function DashboardPage() {
           <AlertDescription className="text-xs">{error}</AlertDescription>
         </Alert>
       ) : (
-        /* 2. THREE-COLUMN DASHBOARD GRID MATCHING THE MOCKUP */
-        <div id="dashboard-content" className="grid grid-cols-1 lg:grid-cols-12 gap-6 md:gap-8 items-start">
-          
-          {/* COLUMN 1: LEFT WIDGETS (Card + Recent Transactions) - Col Span 4 */}
-          <div className="lg:col-span-4 flex flex-col gap-6 md:gap-8">
-            <CardWidget totalExpenses={totalExpenses} />
-            <RecentTransactions />
-          </div>
+        isAdminView ? (
+          <div id="dashboard-content" className="grid grid-cols-1 xl:grid-cols-12 gap-6 md:gap-8 items-start">
+            {/* Workspace Summary */}
+            <div className="xl:col-span-12 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
+              <Card className="card-gradient border-none p-5">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-[10px] font-bold text-black/40 uppercase tracking-wider">Workspace Funds</p>
+                    <p className="text-2xl font-black text-black mt-2">{format(workspaceAllocation)}</p>
+                    <p className="text-[10px] font-semibold text-black/40 mt-2">Remaining pool {format(workspaceRemaining)}</p>
+                  </div>
+                  <div className="w-10 h-10 rounded-full bg-black/5 flex items-center justify-center">
+                    <Briefcase className="w-5 h-5 text-black/60" />
+                  </div>
+                </div>
+              </Card>
+              <Card className="card-gradient border-none p-5">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-[10px] font-bold text-black/40 uppercase tracking-wider">Total Expenses</p>
+                    <p className="text-2xl font-black text-black mt-2">{format(totalActiveExpenses)}</p>
+                    <p className="text-[10px] font-semibold text-black/40 mt-2">{activeTransactions.length} transactions</p>
+                  </div>
+                  <div className="w-10 h-10 rounded-full bg-black/5 flex items-center justify-center">
+                    <Activity className="w-5 h-5 text-black/60" />
+                  </div>
+                </div>
+              </Card>
+              <Card className="card-gradient border-none p-5">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-[10px] font-bold text-black/40 uppercase tracking-wider">Active Users</p>
+                    <p className="text-2xl font-black text-black mt-2">{activeUsers}</p>
+                    <p className="text-[10px] font-semibold text-black/40 mt-2">{pendingUsers.length} pending</p>
+                  </div>
+                  <div className="w-10 h-10 rounded-full bg-black/5 flex items-center justify-center">
+                    <Users className="w-5 h-5 text-black/60" />
+                  </div>
+                </div>
+              </Card>
+              <Card className="card-gradient border-none p-5">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-[10px] font-bold text-black/40 uppercase tracking-wider">Transfers</p>
+                    <p className="text-2xl font-black text-black mt-2">{transferCount}</p>
+                    <p className="text-[10px] font-semibold text-black/40 mt-2">Across active activity</p>
+                  </div>
+                  <div className="w-10 h-10 rounded-full bg-black/5 flex items-center justify-center">
+                    <ClipboardList className="w-5 h-5 text-black/60" />
+                  </div>
+                </div>
+              </Card>
+            </div>
 
-          {/* COLUMN 2: MIDDLE WIDGETS (Category Radar + Transaction Budget spline) - Col Span 5 */}
-          <div className="lg:col-span-5 flex flex-col gap-6 md:gap-8">
-            <CategoryChart data={categorySpendingData} />
-            <TransactionChart data={monthlySpendingData} />
-          </div>
+            {/* Financial Overview */}
+            <div className="xl:col-span-7 flex flex-col gap-6 md:gap-8">
+              <CategoryChart data={categorySpendingData} />
+              <TransactionChart data={monthlySpendingData} />
+            </div>
 
-          {/* COLUMN 3: RIGHT WIDGETS (Quick Transfer + Piggy Bank Promo) - Col Span 3 */}
-          <div className="lg:col-span-3 flex flex-col gap-6 md:gap-8">
-            <QuickTransfer />
-            <PromoBanner />
-          </div>
+            {/* Activity Feed */}
+            <div className="xl:col-span-5 flex flex-col gap-6 md:gap-8">
+              <Card className="card-gradient border-none p-6">
+                <CardHeader className="p-0 mb-4 flex flex-row items-center justify-between">
+                  <CardTitle className="text-base font-bold text-black tracking-tight">Activity Feed</CardTitle>
+                  <Activity className="w-4 h-4 text-black/40" />
+                </CardHeader>
+                <CardContent className="p-0">
+                  {recentActivity.length === 0 ? (
+                    <div className="text-xs text-black/45 font-semibold">No recent activity yet.</div>
+                  ) : (
+                    <div className="flex flex-col gap-3">
+                      {recentActivity.map((item, index) => (
+                        <div key={`${item.type}-${index}`} className="flex items-center justify-between text-xs">
+                          <div>
+                            <p className="font-semibold text-black">{item.title}</p>
+                            <p className="text-[10px] text-black/40">{item.meta}</p>
+                          </div>
+                          <span className="text-[10px] text-black/40">
+                            {new Date(item.timestamp).toLocaleDateString()}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
 
-        </div>
+              <Card className="card-gradient border-none p-6">
+                <CardHeader className="p-0 mb-4 flex flex-row items-center justify-between">
+                  <CardTitle className="text-base font-bold text-black tracking-tight">User Management Snapshot</CardTitle>
+                  <UserCog className="w-4 h-4 text-black/40" />
+                </CardHeader>
+                <CardContent className="p-0 flex flex-col gap-3">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="font-semibold text-black">Active users</span>
+                    <span className="font-black text-black">{activeUsers}</span>
+                  </div>
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="font-semibold text-black">Pending approvals</span>
+                    <span className="font-black text-black">{pendingUsers.length}</span>
+                  </div>
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="font-semibold text-black">Total notes</span>
+                    <span className="font-black text-black">{totalNotes}</span>
+                  </div>
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="font-semibold text-black">Archived activity</span>
+                    <span className="font-black text-black">{archivedTransactions.length + archivedNotes}</span>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Pending Actions */}
+            <div className="xl:col-span-4 flex flex-col gap-6">
+              <Card className="card-gradient border-none p-6">
+                <CardHeader className="p-0 mb-4">
+                  <CardTitle className="text-base font-bold text-black tracking-tight">Pending Actions</CardTitle>
+                </CardHeader>
+                <CardContent className="p-0 flex flex-col gap-3 text-xs">
+                  <div className="flex items-center justify-between">
+                    <span className="font-semibold text-black">User approvals</span>
+                    <span className="font-black text-black">{pendingUsers.length}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="font-semibold text-black">Archive review</span>
+                    <span className="font-black text-black">{archivedTransactions.length + archivedNotes}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="font-semibold text-black">Transfers to review</span>
+                    <span className="font-black text-black">{transferCount}</span>
+                  </div>
+                </CardContent>
+              </Card>
+              <Card className="card-gradient border-none p-6">
+                <CardHeader className="p-0 mb-4">
+                  <CardTitle className="text-base font-bold text-black tracking-tight">Quick Admin Actions</CardTitle>
+                </CardHeader>
+                <CardContent className="p-0 grid grid-cols-1 gap-2">
+                  <Button onClick={() => handleAdminAction("Approve users")} className="button-gradient h-10 text-xs">
+                    Approve users
+                  </Button>
+                  <Button onClick={() => handleAdminAction("Manage categories")} className="button-gradient h-10 text-xs">
+                    Manage categories
+                  </Button>
+                  <Button onClick={() => handleAdminAction("Review archives")} className="button-gradient h-10 text-xs">
+                    Review archives
+                  </Button>
+                  <Button onClick={() => handleAdminAction("Workspace settings")} className="button-gradient h-10 text-xs">
+                    Workspace settings
+                  </Button>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Recent Transfers */}
+            <div className="xl:col-span-4 flex flex-col gap-6">
+              <Card className="card-gradient border-none p-6">
+                <CardHeader className="p-0 mb-4">
+                  <CardTitle className="text-base font-bold text-black tracking-tight">Recent Transfers</CardTitle>
+                </CardHeader>
+                <CardContent className="p-0">
+                  {activeTransactions.filter((t) => t.category.toLowerCase() === "transfer").length === 0 ? (
+                    <div className="text-xs text-black/45 font-semibold">No transfers recorded.</div>
+                  ) : (
+                    <div className="flex flex-col gap-3">
+                      {activeTransactions
+                        .filter((t) => t.category.toLowerCase() === "transfer")
+                        .slice(0, 5)
+                        .map((transfer) => (
+                          <div key={transfer.id} className="flex items-center justify-between text-xs">
+                            <div>
+                              <p className="font-semibold text-black">{transfer.title}</p>
+                              <p className="text-[10px] text-black/40">{new Date(transfer.date).toLocaleDateString()}</p>
+                            </div>
+                            <span className="font-black text-black">{format(transfer.amount)}</span>
+                          </div>
+                        ))}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Archive Overview */}
+            <div className="xl:col-span-4 flex flex-col gap-6">
+              <Card className="card-gradient border-none p-6">
+                <CardHeader className="p-0 mb-4 flex flex-row items-center justify-between">
+                  <CardTitle className="text-base font-bold text-black tracking-tight">Archive Overview</CardTitle>
+                  <Archive className="w-4 h-4 text-black/40" />
+                </CardHeader>
+                <CardContent className="p-0 flex flex-col gap-3 text-xs">
+                  <div className="flex items-center justify-between">
+                    <span className="font-semibold text-black">Archived transactions</span>
+                    <span className="font-black text-black">{archivedTransactions.length}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="font-semibold text-black">Archived notes</span>
+                    <span className="font-black text-black">{archivedNotes}</span>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+        ) : (
+          /* 2. THREE-COLUMN MEMBER DASHBOARD GRID */
+          <div id="dashboard-content" className="grid grid-cols-1 lg:grid-cols-12 gap-6 md:gap-8 items-start">
+            <div className="lg:col-span-4 flex flex-col gap-6 md:gap-8">
+              <CardWidget totalExpenses={totalActiveExpenses} />
+              <RecentTransactions />
+            </div>
+
+            <div className="lg:col-span-5 flex flex-col gap-6 md:gap-8">
+              <CategoryChart data={categorySpendingData} />
+              <TransactionChart data={monthlySpendingData} />
+            </div>
+
+            <div className="lg:col-span-3 flex flex-col gap-6 md:gap-8">
+              <QuickTransfer availableBalanceInINR={Math.max(0, allocationBaseInINR - totalActiveExpenses)} />
+              <PromoBanner />
+            </div>
+          </div>
+        )
       )}
     </motion.div>
   )
@@ -224,8 +477,9 @@ export default function DashboardPage() {
    SUB-COMPONENT 1: CARD WIDGET (VISA CARD + LIMIT PROGRESS)
    ======================================================== */
 function CardWidget({ totalExpenses }: { totalExpenses: number }) {
-  const { format, convert, currency } = useCurrency()
+  const { format } = useCurrency()
   const { addNotification } = useNotification()
+  const { user } = useAuth()
 
   // Credit Card limits - Base limit: ₹300,000. Limit & Spent translate live!
   const baseLimit = 300000
@@ -278,7 +532,7 @@ function CardWidget({ totalExpenses }: { totalExpenses: number }) {
           <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-wider text-white/50">
             <div>
               <p className="text-[8px] text-white/30 font-black">Card Holder</p>
-              <p className="mt-0.5 text-white/80">Main Admin</p>
+              <p className="mt-0.5 text-white/80">{user?.name || "User"}</p>
             </div>
             <div className="text-right">
               <p className="text-[8px] text-white/30 font-black">Expires</p>
@@ -341,7 +595,7 @@ function CardWidget({ totalExpenses }: { totalExpenses: number }) {
 /* ========================================================
    SUB-COMPONENT 2: QUICK TRANSFER (AVATARS + AMOUNT SEND)
    ======================================================== */
-function QuickTransfer() {
+function QuickTransfer({ availableBalanceInINR }: { availableBalanceInINR: number }) {
   const { symbol, convertToINR, currency } = useCurrency()
   const { addNotification } = useNotification()
   const { addTransaction } = useTransactions()
@@ -368,9 +622,20 @@ function QuickTransfer() {
       return
     }
 
+    if (availableBalanceInINR <= 0) {
+      setError("Insufficient balance.")
+      return
+    }
+
     const numAmount = Number.parseFloat(amount)
     if (!amount || Number.isNaN(numAmount) || numAmount <= 0) {
       setError("Enter a valid amount greater than 0.")
+      return
+    }
+
+    const amountInINR = currency === "INR" ? numAmount : convertToINR(numAmount)
+    if (amountInINR > availableBalanceInINR) {
+      setError("Insufficient balance.")
       return
     }
 
@@ -379,7 +644,6 @@ function QuickTransfer() {
 
     try {
       const friend = friends[selectedFriend]
-      const amountInINR = currency === "INR" ? numAmount : convertToINR(numAmount)
       await addTransaction({
         title: `Transfer to ${friend.name}`,
         amount: amountInINR,
@@ -463,11 +727,14 @@ function QuickTransfer() {
                   setError(null)
                 }
               }}
-              disabled={sending || !permissions.canAddTransactions}
+              disabled={sending || !permissions.canAddTransactions || availableBalanceInINR <= 0}
               className="w-full bg-transparent pl-9 pr-4 py-3 text-sm font-extrabold text-black focus:outline-none placeholder:text-black/25"
             />
           </div>
           {error && <p className="text-[10px] font-bold text-red-500">{error}</p>}
+          {availableBalanceInINR <= 0 && (
+            <p className="text-[10px] font-semibold text-black/45">No amount left to transfer.</p>
+          )}
           {!permissions.canAddTransactions && (
             <p className="text-[10px] font-semibold text-black/45">Transfers are view-only for your role.</p>
           )}
@@ -477,7 +744,7 @@ function QuickTransfer() {
         {permissions.canAddTransactions && (
           <button
             onClick={handleSend}
-            disabled={sending}
+            disabled={sending || availableBalanceInINR <= 0}
             className={`button-gradient w-full py-3 text-xs flex items-center justify-center gap-1.5 disabled:opacity-50 ${showSuccess ? "ring-2 ring-black/10" : ""}`}
           >
             {sending ? (

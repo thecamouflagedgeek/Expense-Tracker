@@ -4,6 +4,7 @@ import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
 import { useAuth } from "@/contexts/auth-context"
 import { useRole } from "@/contexts/role-context"
+import { useNotification } from "@/contexts/notification-context"
 import { useCurrency, SUPPORTED_CURRENCIES, type CurrencyCode } from "@/context/currency-context"
 import { Button } from "@/components/ui/button"
 import { 
@@ -30,6 +31,7 @@ import {
 export function Navigation() {
   const { user, logout, loading } = useAuth()
   const { permissions, currentRole, switchRole } = useRole()
+  const { addNotification } = useNotification()
   const { currency, setCurrency } = useCurrency()
   const pathname = usePathname()
   const router = useRouter()
@@ -42,6 +44,13 @@ export function Navigation() {
   const handleLogout = async () => {
     await logout()
     router.push("/login")
+  }
+
+  const handleSettingsAction = (label: string) => {
+    addNotification({
+      message: `${label} is coming soon.`,
+      type: "info",
+    })
   }
 
   const navItems = [
@@ -219,8 +228,8 @@ export function Navigation() {
                   <p className="text-black/60 mt-0.5">Paypal, Twitch, and Airbnb transactions populated in {currency}</p>
                 </div>
                 <div className="p-3 text-xs border-b border-black/5 hover:bg-black/5 transition rounded-lg">
-                  <p className="font-semibold text-black">Main Admin Logged In</p>
-                  <p className="text-black/60 mt-0.5">Successful login as administrative profile</p>
+                  <p className="font-semibold text-black">{user?.name || "User"} logged in</p>
+                  <p className="text-black/60 mt-0.5">Successful login to the workspace</p>
                 </div>
                 <div className="p-3 text-xs hover:bg-black/5 transition rounded-lg">
                   <p className="font-semibold text-black">Active Currency Set</p>
@@ -318,37 +327,47 @@ export function Navigation() {
             )
           })}
 
-          {/* Mobile currency quick-toggle */}
+          {/* Mobile settings menu */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <button className="flex flex-col items-center gap-1 px-4 py-2.5 rounded-[20px] text-white/50 hover:text-white transition-all">
-                <Globe className="w-5 h-5" />
-                <span className="text-[9px] font-black uppercase tracking-wider">{currency}</span>
+                <Settings className="w-5 h-5" />
+                <span className="text-[9px] font-black uppercase tracking-wider">Settings</span>
               </button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent 
+            <DropdownMenuContent
               side="top"
-              className="bg-[#0c0d0e] border-white/10 text-white rounded-2xl shadow-2xl mb-2 max-h-72 overflow-y-auto w-44"
+              className="bg-[#0c0d0e] border-white/10 text-white rounded-2xl shadow-2xl mb-2 w-56"
             >
-              <DropdownMenuLabel className="text-[#ccff00] text-[9px] font-black uppercase tracking-wider px-3 py-2">
-                Select Currency
+              <DropdownMenuLabel className="text-white text-[10px] font-bold uppercase tracking-wider px-3 py-2">
+                Settings
               </DropdownMenuLabel>
               <DropdownMenuSeparator className="bg-white/10" />
-              {(Object.keys(SUPPORTED_CURRENCIES) as CurrencyCode[]).map((code) => {
-                const item = SUPPORTED_CURRENCIES[code]
-                return (
-                  <DropdownMenuItem
-                    key={code}
-                    onClick={() => setCurrency(code)}
-                    className={`text-xs px-3 py-2 cursor-pointer hover:bg-[#ccff00]/10 hover:text-[#ccff00] flex items-center justify-between ${
-                      currency === code ? "text-[#ccff00] font-bold" : "text-white/80"
-                    }`}
-                  >
-                    <span>{item.symbol} {code}</span>
-                    {currency === code && <span className="w-1.5 h-1.5 rounded-full bg-[#ccff00]" />}
-                  </DropdownMenuItem>
-                )
-              })}
+              <DropdownMenuItem
+                onClick={() => handleSettingsAction("Profile settings")}
+                className="text-xs py-2 px-3 cursor-pointer text-white/80 hover:bg-white/10"
+              >
+                Profile settings
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() => handleSettingsAction("Preferences")}
+                className="text-xs py-2 px-3 cursor-pointer text-white/80 hover:bg-white/10"
+              >
+                Preferences
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() => handleSettingsAction("Theme options")}
+                className="text-xs py-2 px-3 cursor-pointer text-white/80 hover:bg-white/10"
+              >
+                Theme options
+              </DropdownMenuItem>
+              <DropdownMenuSeparator className="bg-white/10" />
+              <DropdownMenuItem
+                onClick={handleLogout}
+                className="text-xs py-2 px-3 cursor-pointer text-red-400 hover:bg-red-500/10 hover:text-red-400 font-semibold"
+              >
+                <LogOut className="w-3.5 h-3.5 mr-2" /> Logout
+              </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
 
@@ -379,12 +398,6 @@ export function Navigation() {
                   className="text-xs py-2 px-3 cursor-pointer text-white/70 hover:bg-[#ccff00]/10 hover:text-[#ccff00]"
                 >
                   <Settings className="w-3.5 h-3.5 mr-2" /> Switch Role
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  onClick={handleLogout}
-                  className="text-xs py-2 px-3 cursor-pointer text-red-400 hover:bg-red-500/10 hover:text-red-400 font-semibold"
-                >
-                  <LogOut className="w-3.5 h-3.5 mr-2" /> Logout
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
