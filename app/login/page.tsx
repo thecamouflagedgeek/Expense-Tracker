@@ -7,10 +7,9 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { useAuth } from "@/contexts/auth-context"
 import { useRouter } from "next/navigation"
-import { Loader2, Shield, Users } from "lucide-react"
+import { Loader2 } from "lucide-react"
 import Image from "next/image"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
@@ -20,7 +19,6 @@ export default function LoginPage() {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [name, setName] = useState("")
-  const [selectedRole, setSelectedRole] = useState<"admin" | "department-user">("department-user")
   const [loading, setLoading] = useState(false)
   const [googleLoading, setGoogleLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -70,15 +68,14 @@ export default function LoginPage() {
     setError(null)
     setSignupSuccessMessage(null)
     try {
-      const result = await signup(email, password, name, selectedRole)
+      const result = await signup(email, password, name)
       if (result.error) {
         setError(result.error)
       } else {
-        setSignupSuccessMessage(result.message)
+        setSignupSuccessMessage(result.message ?? null)
         setEmail("")
         setPassword("")
         setName("")
-        setSelectedRole("department-user")
       }
     } catch (err: any) {
       setError(err.message || "Failed to sign up. Please try again.")
@@ -94,7 +91,7 @@ export default function LoginPage() {
           <CardHeader className="text-center p-0 mb-5 md:mb-6">
             <motion.div initial={{ scale: 0.8 }} animate={{ scale: 1 }} transition={{ delay: 0.2, duration: 0.3 }}>
               <Image
-                src="/ctrlfund-logo.png"
+                src="/piggy_bank.png"
                 alt="CtrlFund Logo"
                 width={80}
                 height={80}
@@ -274,39 +271,6 @@ export default function LoginPage() {
                       className="mt-1.5 bg-black/[0.02] border border-black/5 text-black hover:bg-black/[0.04] focus:bg-white focus:ring-2 focus:ring-black rounded-xl text-xs h-10 placeholder:text-black/30"
                       required
                     />
-                  </div>
-                  <div>
-                    <Label htmlFor="signup-role" className="text-black/75 font-semibold text-xs">
-                      Account Type
-                    </Label>
-                    <Select
-                      value={selectedRole}
-                      onValueChange={(value: "admin" | "department-user") => setSelectedRole(value)}
-                    >
-                      <SelectTrigger className="mt-1.5 bg-white text-black border border-black/5 hover:bg-black/[0.02] transition-colors rounded-xl text-xs h-10 font-semibold shadow-sm focus:ring-2 focus:ring-black">
-                        <SelectValue placeholder="Select account type" />
-                      </SelectTrigger>
-                      <SelectContent className="bg-white text-black border border-black/5 rounded-2xl shadow-xl">
-                        <SelectItem value="department-user" className="hover:bg-black/[0.04] focus:bg-black/[0.04] text-xs font-semibold rounded-lg my-0.5 cursor-pointer">
-                          <div className="flex items-center space-x-2">
-                            <Users className="h-4 w-4 text-black/60" />
-                            <div>
-                              <div className="font-semibold text-black">Department User</div>
-                              <div className="text-[10px] text-black/40 font-medium">Standard access for members</div>
-                            </div>
-                          </div>
-                        </SelectItem>
-                        <SelectItem value="admin" className="hover:bg-black/[0.04] focus:bg-black/[0.04] text-xs font-semibold rounded-lg my-0.5 cursor-pointer">
-                          <div className="flex items-center space-x-2">
-                            <Shield className="h-4 w-4 text-[#ccff00]" />
-                            <div>
-                              <div className="font-semibold text-black">Admin</div>
-                              <div className="text-[10px] text-black/40 font-medium">Full administrative access</div>
-                            </div>
-                          </div>
-                        </SelectItem>
-                      </SelectContent>
-                    </Select>
                   </div>
                   {error && (
                     <Alert variant="destructive" className="mb-4 bg-red-50 border-red-200 text-red-700 rounded-2xl p-4">

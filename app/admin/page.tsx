@@ -8,13 +8,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
-import {
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -29,9 +22,8 @@ import { Search, Users, UserCheck, UserX, ShieldAlert } from "lucide-react"
 
 export default function AdminPage() {
   const { permissions } = useRole()
-  const { users, updateUserStatus, updateUserRole, deleteUser, activityLog, loading } = useAuth()
+  const { users, updateUserStatus, deleteUser, activityLog, loading } = useAuth()
   const [query, setQuery] = useState("")
-  const [roleFilter, setRoleFilter] = useState("all")
   const [statusFilter, setStatusFilter] = useState("all")
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null)
 
@@ -50,7 +42,6 @@ export default function AdminPage() {
 
   const filteredUsers = useMemo(() => {
     return users.filter((u) => {
-      if (roleFilter !== "all" && u.role !== roleFilter) return false
       if (statusFilter !== "all" && String(u.isActive) !== statusFilter) return false
       const q = query.toLowerCase()
       return (
@@ -58,14 +49,14 @@ export default function AdminPage() {
         u.email.toLowerCase().includes(q)
       )
     })
-  }, [users, roleFilter, statusFilter, query])
+  }, [users, statusFilter, query])
 
   if (!permissions.canAccessAdminHub) {
     return (
       <div className="flex items-center justify-center min-h-[400px] bg-[#eff1e9] text-black">
         <div className="text-center p-8 bg-white border border-black/5 rounded-3xl shadow-xl max-w-md">
           <h2 className="text-2xl font-black text-red-500 mb-2">Access Denied</h2>
-          <p className="text-black/60 text-sm">You do not have permission to access the Admin Hub.</p>
+          <p className="text-black/60 text-sm">You do not have permission to access this workspace.</p>
         </div>
       </div>
     )
@@ -80,8 +71,8 @@ export default function AdminPage() {
     >
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
         <div>
-          <h1 className="text-2xl font-black tracking-tight text-black">Admin Hub</h1>
-          <p className="text-xs text-black/50 font-semibold">Manage users, access, and system activity.</p>
+          <h1 className="text-2xl font-black tracking-tight text-black">Workspace Support</h1>
+          <p className="text-xs text-black/50 font-semibold">Quietly manage user access and system health.</p>
         </div>
       </div>
 
@@ -125,27 +116,15 @@ export default function AdminPage() {
             className="pl-9 bg-white text-black border border-black/5 hover:bg-black/[0.02] focus:bg-white focus:ring-2 focus:ring-black rounded-xl text-xs h-10 font-semibold shadow-sm placeholder:text-black/30"
           />
         </div>
-        <Select value={roleFilter} onValueChange={setRoleFilter}>
-          <SelectTrigger className="w-full md:w-[180px] bg-white text-black border border-black/5 hover:bg-black/[0.02] transition-colors rounded-xl text-xs h-10 font-semibold shadow-sm focus:ring-2 focus:ring-black">
-            <SelectValue placeholder="Role" />
-          </SelectTrigger>
-          <SelectContent className="bg-white text-black border border-black/5 rounded-2xl shadow-xl">
-            <SelectItem value="all" className="text-xs font-semibold">All Roles</SelectItem>
-            <SelectItem value="admin" className="text-xs font-semibold">Admin</SelectItem>
-            <SelectItem value="member" className="text-xs font-semibold">Member</SelectItem>
-            <SelectItem value="viewer" className="text-xs font-semibold">Viewer</SelectItem>
-          </SelectContent>
-        </Select>
-        <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="w-full md:w-[180px] bg-white text-black border border-black/5 hover:bg-black/[0.02] transition-colors rounded-xl text-xs h-10 font-semibold shadow-sm focus:ring-2 focus:ring-black">
-            <SelectValue placeholder="Status" />
-          </SelectTrigger>
-          <SelectContent className="bg-white text-black border border-black/5 rounded-2xl shadow-xl">
-            <SelectItem value="all" className="text-xs font-semibold">All Statuses</SelectItem>
-            <SelectItem value="true" className="text-xs font-semibold">Active</SelectItem>
-            <SelectItem value="false" className="text-xs font-semibold">Inactive</SelectItem>
-          </SelectContent>
-        </Select>
+        <select
+          value={statusFilter}
+          onChange={(event) => setStatusFilter(event.target.value)}
+          className="w-full md:w-[180px] bg-white text-black border border-black/5 hover:bg-black/[0.02] transition-colors rounded-xl text-xs h-10 font-semibold shadow-sm focus:ring-2 focus:ring-black px-3"
+        >
+          <option value="all">All statuses</option>
+          <option value="true">Active</option>
+          <option value="false">Inactive</option>
+        </select>
       </div>
 
       <Card className="card-gradient border-none p-6 mb-8">
@@ -174,16 +153,6 @@ export default function AdminPage() {
                   <p className="text-[10px] text-black/45 font-semibold">{u.email}</p>
                 </div>
                 <div className="flex flex-col md:flex-row md:items-center gap-2">
-                  <Select value={u.role} onValueChange={(value) => updateUserRole(u.id, value as "admin" | "member" | "viewer")}>
-                    <SelectTrigger className="w-full md:w-[160px] bg-white text-black border border-black/5 hover:bg-black/[0.02] transition-colors rounded-xl text-xs h-9 font-semibold shadow-sm focus:ring-2 focus:ring-black">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent className="bg-white text-black border border-black/5 rounded-2xl shadow-xl">
-                      <SelectItem value="admin" className="text-xs font-semibold">Admin</SelectItem>
-                      <SelectItem value="member" className="text-xs font-semibold">Member</SelectItem>
-                      <SelectItem value="viewer" className="text-xs font-semibold">Viewer</SelectItem>
-                    </SelectContent>
-                  </Select>
                   <Button
                     variant="outline"
                     className="h-9 text-xs"

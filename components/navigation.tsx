@@ -20,7 +20,6 @@ import {
   CreditCard, 
   FileText, 
   Settings, 
-  Shield,
   Bell, 
   FileDown, 
   LogOut, 
@@ -30,7 +29,7 @@ import {
 
 export function Navigation() {
   const { user, logout, loading } = useAuth()
-  const { permissions, currentRole, switchRole } = useRole()
+  const { permissions } = useRole()
   const { addNotification } = useNotification()
   const { currency, setCurrency } = useCurrency()
   const pathname = usePathname()
@@ -57,14 +56,13 @@ export function Navigation() {
     { name: "Dashboard", href: "/dashboard", icon: Home, show: permissions.canViewDashboard },
     { name: "Transactions", href: "/transactions", icon: CreditCard, show: permissions.canViewTransactions },
     { name: "Notes", href: "/notes", icon: FileText, show: permissions.canViewNotes },
-    { name: "Admin", href: "/admin", icon: Shield, show: permissions.canAccessAdminHub },
   ]
 
   // Get Page Title based on route
   const getPageTitle = () => {
     if (pathname.startsWith("/transactions")) return "Finance"
     if (pathname.startsWith("/notes")) return "Notes"
-    if (pathname.startsWith("/admin")) return "Admin"
+    if (pathname.startsWith("/admin")) return "Dashboard"
     return "Dashboard"
   }
 
@@ -123,7 +121,7 @@ export function Navigation() {
           </nav>
         </div>
 
-        {/* Bottom Messages / Settings Role Switcher */}
+        {/* Bottom Messages / Settings */}
         <div className="flex flex-col gap-4 w-full items-center">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -132,28 +130,12 @@ export function Navigation() {
               </button>
             </DropdownMenuTrigger>
             <DropdownMenuContent className="bg-[#0c0d0e] border-white/10 text-white rounded-xl shadow-2xl ml-4">
-              <DropdownMenuLabel className="text-[#ccff00] text-xs font-bold uppercase tracking-wider">System controls</DropdownMenuLabel>
+              <DropdownMenuLabel className="text-[#ccff00] text-xs font-bold uppercase tracking-wider">Workspace</DropdownMenuLabel>
               <DropdownMenuSeparator className="bg-white/10" />
               {user && (
-                <>
-                  <div className="px-2 py-1.5 text-xs text-white/50">
-                    Logged in as: <strong className="text-white block">{user.name}</strong>
-                  </div>
-                  <DropdownMenuSeparator className="bg-white/10" />
-                  <DropdownMenuLabel className="text-xs text-white/60">Switch Role permissions</DropdownMenuLabel>
-                  <DropdownMenuItem 
-                    onClick={() => switchRole("admin")}
-                    className={`text-xs hover:bg-[#ccff00]/10 hover:text-[#ccff00] cursor-pointer ${currentRole === "admin" ? "text-[#ccff00] font-bold" : "text-white"}`}
-                  >
-                    Switch to Admin
-                  </DropdownMenuItem>
-                  <DropdownMenuItem 
-                    onClick={() => switchRole("member")}
-                    className={`text-xs hover:bg-[#ccff00]/10 hover:text-[#ccff00] cursor-pointer ${currentRole === "member" ? "text-[#ccff00] font-bold" : "text-white"}`}
-                  >
-                    Switch to Member
-                  </DropdownMenuItem>
-                </>
+                <div className="px-2 py-1.5 text-xs text-white/50">
+                  Logged in as: <strong className="text-white block">{user.name}</strong>
+                </div>
               )}
             </DropdownMenuContent>
           </DropdownMenu>
@@ -279,10 +261,6 @@ export function Navigation() {
                 <div className="px-3 pb-2 text-[10px] text-black/50 truncate">{user.email}</div>
                 <DropdownMenuSeparator className="bg-black/5" />
                 
-                <div className="px-3 py-1.5 text-[10px] uppercase font-black text-[#ccff00] bg-black rounded-lg mx-2 my-1 text-center">
-                  Role: {user.role === "admin" ? "Administrator" : user.role === "viewer" ? "Viewer" : "Member"}
-                </div>
-                
                 <DropdownMenuSeparator className="bg-black/5" />
                 
                 <DropdownMenuItem 
@@ -389,16 +367,7 @@ export function Navigation() {
                 <DropdownMenuLabel className="text-white font-bold">{user.name}</DropdownMenuLabel>
                 <div className="px-3 pb-2 text-[10px] text-white/40 truncate">{user.email}</div>
                 <DropdownMenuSeparator className="bg-white/10" />
-                <div className="px-3 py-1.5 text-[9px] uppercase font-black text-[#ccff00] bg-white/5 rounded-lg mx-2 my-1 text-center">
-                  {user.role === "admin" ? "Administrator" : user.role === "viewer" ? "Viewer" : "Member"}
-                </div>
                 <DropdownMenuSeparator className="bg-white/10" />
-                <DropdownMenuItem
-                  onClick={() => switchRole(currentRole === "admin" ? "member" : "admin")}
-                  className="text-xs py-2 px-3 cursor-pointer text-white/70 hover:bg-[#ccff00]/10 hover:text-[#ccff00]"
-                >
-                  <Settings className="w-3.5 h-3.5 mr-2" /> Switch Role
-                </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           )}

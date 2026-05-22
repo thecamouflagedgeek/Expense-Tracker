@@ -1,38 +1,37 @@
 "use client"
 
-import type React from "C:/Users/Vercel/Desktop/expense-tracker-app/node_modules/@types/react"
+import type React from "react"
 import { useAuth } from "@/contexts/auth-context"
+import { useRole } from "@/contexts/role-context"
 import { usePathname, useRouter } from "next/navigation"
 import { useEffect } from "react"
 import { Loader2 } from "lucide-react"
 
-const publicPaths = ["/login", "/shared/note"] // Add any other public paths here
+const publicPaths = ["/login", "/shared/note"]
 
 export function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth()
+  const { currentRole, loading: roleLoading } = useRole()
   const router = useRouter()
   const pathname = usePathname()
 
   useEffect(() => {
-    // If still loading, do nothing and wait for auth state to resolve
-    if (loading) {
+    if (loading || roleLoading) {
       return
     }
 
-    // Check if the current path is public
     const isPublicPath = publicPaths.some((path) => pathname.startsWith(path))
 
     if (!user && !isPublicPath) {
-      // If not logged in and trying to access a protected route, redirect to login
-      router.push("/login")
+      router.replace("/login")
     } else if (user && pathname === "/login") {
-      // If logged in and trying to access login page, redirect to dashboard
-      router.push("/dashboard")
+      router.replace("/dashboard")
+    } else if (user && pathname.startsWith("/admin") && currentRole !== "owner") {
+      router.replace("/dashboard")
     }
-  }, [user, loading, pathname, router])
+  }, [user, loading, roleLoading, pathname, router, currentRole])
 
-  // Show a loading spinner while authentication state is being determined
-  if (loading) {
+  if (loading || roleLoading) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen grid-bg-pattern text-black">
         <Loader2 className="h-10 w-10 animate-spin text-black stroke-[3]" />
@@ -41,11 +40,9 @@ export function ProtectedRoute({ children }: { children: React.ReactNode }) {
     )
   }
 
-  // Render children only if user is authenticated or if it's a public path
   if (user || publicPaths.some((path) => pathname.startsWith(path))) {
     return <>{children}</>
   }
 
-  // Otherwise, return null (or a minimal loading state) as redirect is handled by useEffect
   return null
 }

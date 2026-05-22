@@ -121,10 +121,10 @@ export default function TransactionsPage() {
           </div>
           <h2 className="text-2xl font-black text-orange-600 mb-2">Account Inactive</h2>
           <p className="text-black/60 text-sm mb-4">
-            Your account has been deactivated by an administrator. Please contact support to reactivate your account.
+            This account is temporarily paused. Please contact support to reactivate your workspace.
           </p>
           <div className="text-xs text-black/40 font-semibold">
-            If you believe this is an error, please reach out to your system administrator.
+            If you believe this is an error, support can help restore access.
           </div>
         </motion.div>
       </div>
@@ -144,10 +144,10 @@ export default function TransactionsPage() {
           </div>
           <h2 className="text-2xl font-black text-red-500 mb-2">Access Denied</h2>
           <p className="text-black/60 text-sm mb-4">
-            You do not have permission to view transactions. Your access has been restricted by an administrator.
+            Transactions are not available for this account right now.
           </p>
           <div className="text-xs text-black/40 font-semibold">
-            Contact your administrator if you need access to this feature.
+            Contact support if you need help with this workspace.
           </div>
         </motion.div>
       </div>
@@ -254,7 +254,7 @@ export default function TransactionsPage() {
           <AlertTitle className="font-bold">Limited Access</AlertTitle>
           <AlertDescription className="text-xs mt-0.5">
             {!permissions.canEditTransactions && !permissions.canAddTransactions
-              ? "You have read-only access to transactions. Contact an administrator to request editing permissions."
+              ? "Transactions are currently read-only for this account."
               : !permissions.canEditTransactions
                 ? "You can add new transactions but cannot edit existing ones."
                 : "You can edit transactions but cannot add new ones."}

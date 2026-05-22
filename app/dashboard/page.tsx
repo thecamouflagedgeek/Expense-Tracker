@@ -21,7 +21,6 @@ import {
   FileSpreadsheet, 
   FileText, 
   File, 
-  Plus, 
   Wifi, 
   ArrowRight,
   Sparkles,
@@ -40,7 +39,7 @@ export default function DashboardPage() {
   const { notes, loading: notesLoading, error: notesError } = useNotes()
   const { users, loading: usersLoading, error: usersError } = useAuth()
   const { permissions, currentRole } = useRole()
-  const { format, symbol } = useCurrency()
+  const { format } = useCurrency()
   const { addNotification } = useNotification()
 
   const allocationBaseInINR = 300000
@@ -166,11 +165,11 @@ export default function DashboardPage() {
     )
   }
 
-  const isAdminView = currentRole === "admin"
+  const isAdminView = currentRole === "owner"
 
-  const handleAdminAction = (label: string) => {
+  const handleSupportAction = (label: string) => {
     addNotification({
-      message: `${label} is queued for setup.`,
+      message: `${label} is ready for deeper backend tooling.`,
       type: "info",
     })
   }
@@ -251,9 +250,9 @@ export default function DashboardPage() {
               <Card className="card-gradient border-none p-5">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-[10px] font-bold text-black/40 uppercase tracking-wider">Workspace Funds</p>
+                    <p className="text-[10px] font-bold text-black/40 uppercase tracking-wider">Workspace Health</p>
                     <p className="text-2xl font-black text-black mt-2">{format(workspaceAllocation)}</p>
-                    <p className="text-[10px] font-semibold text-black/40 mt-2">Remaining pool {format(workspaceRemaining)}</p>
+                    <p className="text-[10px] font-semibold text-black/40 mt-2">Estimated runway {format(workspaceRemaining)}</p>
                   </div>
                   <div className="w-10 h-10 rounded-full bg-black/5 flex items-center justify-center">
                     <Briefcase className="w-5 h-5 text-black/60" />
@@ -275,9 +274,9 @@ export default function DashboardPage() {
               <Card className="card-gradient border-none p-5">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-[10px] font-bold text-black/40 uppercase tracking-wider">Active Users</p>
+                    <p className="text-[10px] font-bold text-black/40 uppercase tracking-wider">Active Members</p>
                     <p className="text-2xl font-black text-black mt-2">{activeUsers}</p>
-                    <p className="text-[10px] font-semibold text-black/40 mt-2">{pendingUsers.length} pending</p>
+                    <p className="text-[10px] font-semibold text-black/40 mt-2">{pendingUsers.length} needs support</p>
                   </div>
                   <div className="w-10 h-10 rounded-full bg-black/5 flex items-center justify-center">
                     <Users className="w-5 h-5 text-black/60" />
@@ -334,16 +333,16 @@ export default function DashboardPage() {
 
               <Card className="card-gradient border-none p-6">
                 <CardHeader className="p-0 mb-4 flex flex-row items-center justify-between">
-                  <CardTitle className="text-base font-bold text-black tracking-tight">User Management Snapshot</CardTitle>
+                  <CardTitle className="text-base font-bold text-black tracking-tight">Support Snapshot</CardTitle>
                   <UserCog className="w-4 h-4 text-black/40" />
                 </CardHeader>
                 <CardContent className="p-0 flex flex-col gap-3">
                   <div className="flex items-center justify-between text-xs">
-                    <span className="font-semibold text-black">Active users</span>
+                    <span className="font-semibold text-black">Active members</span>
                     <span className="font-black text-black">{activeUsers}</span>
                   </div>
                   <div className="flex items-center justify-between text-xs">
-                    <span className="font-semibold text-black">Pending approvals</span>
+                    <span className="font-semibold text-black">Accounts needing support</span>
                     <span className="font-black text-black">{pendingUsers.length}</span>
                   </div>
                   <div className="flex items-center justify-between text-xs">
@@ -362,11 +361,11 @@ export default function DashboardPage() {
             <div className="xl:col-span-4 flex flex-col gap-6">
               <Card className="card-gradient border-none p-6">
                 <CardHeader className="p-0 mb-4">
-                  <CardTitle className="text-base font-bold text-black tracking-tight">Pending Actions</CardTitle>
+                  <CardTitle className="text-base font-bold text-black tracking-tight">Quiet Controls</CardTitle>
                 </CardHeader>
                 <CardContent className="p-0 flex flex-col gap-3 text-xs">
                   <div className="flex items-center justify-between">
-                    <span className="font-semibold text-black">User approvals</span>
+                    <span className="font-semibold text-black">Account checks</span>
                     <span className="font-black text-black">{pendingUsers.length}</span>
                   </div>
                   <div className="flex items-center justify-between">
@@ -374,27 +373,27 @@ export default function DashboardPage() {
                     <span className="font-black text-black">{archivedTransactions.length + archivedNotes}</span>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="font-semibold text-black">Transfers to review</span>
+                    <span className="font-semibold text-black">Transfer monitoring</span>
                     <span className="font-black text-black">{transferCount}</span>
                   </div>
                 </CardContent>
               </Card>
               <Card className="card-gradient border-none p-6">
                 <CardHeader className="p-0 mb-4">
-                  <CardTitle className="text-base font-bold text-black tracking-tight">Quick Admin Actions</CardTitle>
+                  <CardTitle className="text-base font-bold text-black tracking-tight">Support Actions</CardTitle>
                 </CardHeader>
                 <CardContent className="p-0 grid grid-cols-1 gap-2">
-                  <Button onClick={() => handleAdminAction("Approve users")} className="button-gradient h-10 text-xs">
-                    Approve users
+                  <Button onClick={() => handleSupportAction("Account support")} className="button-gradient h-10 text-xs">
+                    Account support
                   </Button>
-                  <Button onClick={() => handleAdminAction("Manage categories")} className="button-gradient h-10 text-xs">
-                    Manage categories
+                  <Button onClick={() => handleSupportAction("Category hygiene")} className="button-gradient h-10 text-xs">
+                    Category hygiene
                   </Button>
-                  <Button onClick={() => handleAdminAction("Review archives")} className="button-gradient h-10 text-xs">
+                  <Button onClick={() => handleSupportAction("Review archives")} className="button-gradient h-10 text-xs">
                     Review archives
                   </Button>
-                  <Button onClick={() => handleAdminAction("Workspace settings")} className="button-gradient h-10 text-xs">
-                    Workspace settings
+                  <Button onClick={() => handleSupportAction("Emergency controls")} className="button-gradient h-10 text-xs">
+                    Emergency controls
                   </Button>
                 </CardContent>
               </Card>
@@ -479,20 +478,36 @@ export default function DashboardPage() {
 function CardWidget({ totalExpenses }: { totalExpenses: number }) {
   const { format } = useCurrency()
   const { addNotification } = useNotification()
-  const { user } = useAuth()
+  const { user, updatePersonalSettings } = useAuth()
+  const [limitDraft, setLimitDraft] = useState(String(user?.preferences.spendingLimit ?? 300000))
+  const [savingLimit, setSavingLimit] = useState(false)
 
-  // Credit Card limits - Base limit: ₹300,000. Limit & Spent translate live!
-  const baseLimit = 300000
-  const limitInActive = baseLimit
+  const personalLimit = Math.max(1, Number(user?.preferences.spendingLimit ?? 300000))
+  const limitInActive = personalLimit
   const spentInActive = totalExpenses
-  const remainingInActive = Math.max(0, baseLimit - totalExpenses)
-  const percentUsed = Math.min(100, Math.round((totalExpenses / baseLimit) * 100))
+  const remainingInActive = Math.max(0, personalLimit - totalExpenses)
+  const percentUsed = Math.min(100, Math.round((totalExpenses / personalLimit) * 100))
 
-  const handleAddNewCard = () => {
-    addNotification({
-      message: "Card creation modal is locked in member permissions. Please contact the main administrator to expand credit lines.",
-      type: "info"
-    })
+  const handleSaveLimit = async () => {
+    const nextLimit = Number(limitDraft)
+    if (!Number.isFinite(nextLimit) || nextLimit <= 0) {
+      addNotification({
+        message: "Enter a spending limit greater than 0.",
+        type: "error",
+      })
+      return
+    }
+
+    setSavingLimit(true)
+    try {
+      await updatePersonalSettings({ spendingLimit: nextLimit })
+      addNotification({
+        message: "Personal spending limit updated.",
+        type: "success",
+      })
+    } finally {
+      setSavingLimit(false)
+    }
   }
 
   return (
@@ -580,14 +595,25 @@ function CardWidget({ totalExpenses }: { totalExpenses: number }) {
         </div>
       </Card>
 
-      {/* Add New Card Button */}
-      <button 
-        onClick={handleAddNewCard}
-        className="w-full border-2 border-dashed border-black/10 hover:border-black/20 text-black/50 hover:text-black rounded-2xl py-3.5 flex items-center justify-center gap-2 text-xs font-bold transition-all hover:bg-black/[0.01]"
-      >
-        <Plus className="w-4 h-4" />
-        <span>Add New Card</span>
-      </button>
+      <div className="w-full border-2 border-dashed border-black/10 rounded-2xl p-3.5 flex flex-col gap-3 bg-white/30">
+        <label className="text-[10px] font-black uppercase tracking-wider text-black/40">Personal Limit</label>
+        <div className="flex items-center gap-2">
+          <input
+            type="number"
+            min="1"
+            value={limitDraft}
+            onChange={(event) => setLimitDraft(event.target.value)}
+            className="min-w-0 flex-1 h-10 rounded-xl bg-white border border-black/5 px-3 text-xs font-bold text-black focus:outline-none focus:ring-2 focus:ring-black"
+          />
+          <button
+            onClick={handleSaveLimit}
+            disabled={savingLimit}
+            className="button-gradient h-10 px-4 text-xs disabled:opacity-60"
+          >
+            {savingLimit ? "Saving" : "Update"}
+          </button>
+        </div>
+      </div>
     </div>
   )
 }

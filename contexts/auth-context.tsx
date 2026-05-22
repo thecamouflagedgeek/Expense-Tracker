@@ -1,15 +1,48 @@
 "use client"
 
-import { useRouter } from "next/navigation"
 import type React from "react"
-import { createContext, useState, useEffect, useContext, useCallback } from "react"
+import { createContext, useState, useEffect, useContext, useCallback, useMemo } from "react"
+import {
+  GoogleAuthProvider,
+  createUserWithEmailAndPassword,
+  onAuthStateChanged,
+  signInWithEmailAndPassword,
+  signInWithPopup,
+  signOut,
+  updateProfile,
+} from "firebase/auth"
+import {
+  collection,
+  deleteDoc,
+  doc,
+  getDoc,
+  onSnapshot,
+  query,
+  setDoc,
+  updateDoc,
+} from "firebase/firestore"
+import { auth, db } from "@/lib/firebase"
 import { useNotification } from "./notification-context"
-import * as authService from "@/services/authService"
-import type { User } from "@/services/authService"
 
-export type UserRole = "admin" | "member" | "viewer"
+export type UserRole = "member" | "owner"
 
-export type { User } from "@/services/authService"
+export type User = {
+  id: string
+  email: string
+  name: string
+  role: UserRole
+  isActive: boolean
+  createdAt: string
+  lastLogin: string | null
+  customPermissions: {
+    canEditTransactions: boolean
+    canUploadReceipts: boolean
+    canEditNotes: boolean
+  }
+  preferences: {
+    spendingLimit: number
+  }
+}
 
 type AuthContextType = {
   user: User | null
@@ -19,21 +52,65 @@ type AuthContextType = {
   error: string | null
   login: (email: string, password: string) => Promise<void>
   loginWithGoogle: () => Promise<void>
-  signup: (
-    email: string,
-    password: string,
-    name: string,
-    role: "admin" | "department-user",
-  ) => Promise<{ error?: string; message?: string }>
+  signup: (email: string, password: string, name: string) => Promise<{ error?: string; message?: string }>
   logout: () => Promise<void>
+  updatePersonalSettings: (settings: Partial<User["preferences"]>) => Promise<void>
   updateUserStatus: (userId: string, isActive: boolean) => Promise<void>
   updateUserPermissions: (userId: string, permissions: Partial<User["customPermissions"]>) => Promise<void>
-  updateUserRole: (userId: string, role: "admin" | "member" | "viewer") => Promise<void>
   deleteUser: (userId: string) => Promise<void>
   activityLog: any[]
 }
 
 export const AuthContext = createContext<AuthContextType | undefined>(undefined)
+
+const defaultPermissionsForRole = (_role: UserRole) => ({
+  canEditTransactions: true,
+  canUploadReceipts: true,
+  canEditNotes: true,
+})
+
+const defaultPreferences = {
+  spendingLimit: 300000,
+}
+
+const resolveOwnerAccess = async (firebaseUser: import("firebase/auth").User) => {
+  try {
+    const token = await firebaseUser.getIdToken()
+    const response = await fetch("/api/auth/owner-access", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    })
+    if (!response.ok) return false
+    const data = (await response.json()) as { owner?: boolean }
+    return Boolean(data.owner)
+  } catch (err) {
+    console.warn("Owner access check failed:", err)
+    return false
+  }
+}
+
+const normalizeUserData = (id: string, data: any): User => {
+  const role: UserRole = data?.internalRole === "owner" || data?.role === "owner" ? "owner" : "member"
+  return {
+    id,
+    email: data?.email ?? "",
+    name: data?.name ?? "",
+    role,
+    isActive: data?.isActive ?? true,
+    createdAt: data?.createdAt ?? new Date().toISOString(),
+    lastLogin: data?.lastLogin ?? null,
+    customPermissions: {
+      ...defaultPermissionsForRole(role),
+      ...(data?.customPermissions ?? {}),
+    },
+    preferences: {
+      ...defaultPreferences,
+      ...(data?.preferences ?? {}),
+    },
+  }
+}
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null)
@@ -42,32 +119,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [activityLog, setActivityLog] = useState<any[]>([])
-  const router = useRouter()
   const { addNotification } = useNotification()
-
-  useEffect(() => {
-    const loadInitialData = async () => {
-      try {
-        // Load current user from localStorage
-        const currentUser = authService.getCurrentUser()
-        if (currentUser) {
-          setUser(currentUser)
-          setUserData(currentUser)
-        }
-        
-        // Load all users
-        const users = await authService.getAllUsers()
-        setAllUsers(users)
-      } catch (err) {
-        console.error("Error loading users:", err)
-        setError("Failed to load users")
-      } finally {
-        setLoading(false)
-      }
-    }
-
-    loadInitialData()
-  }, [])
 
   const recordActivity = useCallback((type: string, details: any) => {
     const newActivity = {
@@ -79,21 +131,92 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setActivityLog((prev) => [newActivity, ...prev].slice(0, 100))
   }, [])
 
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+      setLoading(true)
+      setError(null)
+
+      if (!firebaseUser) {
+        setUser(null)
+        setUserData(null)
+        setAllUsers([])
+        setLoading(false)
+        return
+      }
+
+      try {
+        const userRef = doc(db, "users", firebaseUser.uid)
+        const userSnap = await getDoc(userRef)
+        const now = new Date().toISOString()
+
+        const ownerAccess = await resolveOwnerAccess(firebaseUser)
+        const internalRole: UserRole =
+          ownerAccess || userSnap.data()?.internalRole === "owner" || userSnap.data()?.role === "owner" ? "owner" : "member"
+
+        if (!userSnap.exists()) {
+          const payload: User = {
+            id: firebaseUser.uid,
+            email: firebaseUser.email || "",
+            name: firebaseUser.displayName || firebaseUser.email || "",
+            role: internalRole,
+            isActive: true,
+            createdAt: now,
+            lastLogin: now,
+            customPermissions: defaultPermissionsForRole(internalRole),
+            preferences: defaultPreferences,
+          }
+          await setDoc(userRef, { ...payload, publicRole: "member", internalRole }, { merge: true })
+          setUser(payload)
+          setUserData(payload)
+        } else {
+          const normalized = normalizeUserData(firebaseUser.uid, { ...userSnap.data(), internalRole })
+          await setDoc(
+            userRef,
+            {
+              publicRole: "member",
+              internalRole,
+              lastLogin: now,
+              preferences: normalized.preferences,
+            },
+            { merge: true },
+          )
+          setUser(normalized)
+          setUserData({ ...normalized, lastLogin: now })
+        }
+      } catch (err: any) {
+        console.error("Error loading user profile:", err)
+        setError("Failed to load user profile")
+      } finally {
+        setLoading(false)
+      }
+    })
+
+    return () => unsubscribe()
+  }, [])
+
+  useEffect(() => {
+    if (!userData || userData.role !== "owner") {
+      setAllUsers(userData ? [userData] : [])
+      return
+    }
+
+    const usersQuery = query(collection(db, "users"))
+    const unsubscribe = onSnapshot(usersQuery, (snapshot) => {
+      const nextUsers = snapshot.docs.map((docSnap) => normalizeUserData(docSnap.id, docSnap.data()))
+      setAllUsers(nextUsers)
+    })
+
+    return () => unsubscribe()
+  }, [userData])
+
   const login = useCallback(
     async (email: string, password: string) => {
       setLoading(true)
       setError(null)
 
       try {
-        const loggedInUser = await authService.loginWithEmail(email, password)
-        setUser(loggedInUser)
-        setUserData(loggedInUser)
-
-        // Refresh users list
-        const users = await authService.getAllUsers()
-        setAllUsers(users)
-
-        recordActivity("login", { userId: loggedInUser.id, email: loggedInUser.email })
+        await signInWithEmailAndPassword(auth, email, password)
+        recordActivity("login", { email })
 
         addNotification({
           message: "Logged in successfully!",
@@ -101,7 +224,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         })
       } catch (err: any) {
         console.error("Login error:", err)
-        // Set a more user-friendly error message
         const errorMessage = err.message || "Failed to log in. Please check your credentials and try again."
         setError(errorMessage)
         addNotification({
@@ -121,15 +243,33 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setError(null)
 
     try {
-      const loggedInUser = await authService.loginWithGoogle()
-      setUser(loggedInUser)
-      setUserData(loggedInUser)
+      const provider = new GoogleAuthProvider()
+      const result = await signInWithPopup(auth, provider)
+      const firebaseUser = result.user
 
-      // Refresh users list
-      const users = await authService.getAllUsers()
-      setAllUsers(users)
+      if (firebaseUser) {
+        const userRef = doc(db, "users", firebaseUser.uid)
+        const userSnap = await getDoc(userRef)
+        if (!userSnap.exists()) {
+          const ownerAccess = await resolveOwnerAccess(firebaseUser)
+          const internalRole: UserRole = ownerAccess ? "owner" : "member"
+          const now = new Date().toISOString()
+          const payload: User = {
+            id: firebaseUser.uid,
+            email: firebaseUser.email || "",
+            name: firebaseUser.displayName || firebaseUser.email || "",
+            role: internalRole,
+            isActive: true,
+            createdAt: now,
+            lastLogin: now,
+            customPermissions: defaultPermissionsForRole(internalRole),
+            preferences: defaultPreferences,
+          }
+          await setDoc(userRef, { ...payload, publicRole: "member", internalRole }, { merge: true })
+        }
+      }
 
-      recordActivity("google_login", { userId: loggedInUser.id, email: loggedInUser.email })
+      recordActivity("google_login", { email: firebaseUser?.email })
 
       addNotification({
         message: "Logged in with Google successfully!",
@@ -149,24 +289,37 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, [addNotification, recordActivity])
 
   const signup = useCallback(
-    async (email: string, password: string, name: string, role: "admin" | "department-user") => {
+    async (email: string, password: string, name: string) => {
       setLoading(true)
       setError(null)
 
       try {
-        const result = await authService.signup(email, password, name, role)
+        const result = await createUserWithEmailAndPassword(auth, email, password)
+        if (auth.currentUser) {
+          await updateProfile(auth.currentUser, { displayName: name })
+        }
 
-        // Refresh users list
-        const users = await authService.getAllUsers()
-        setAllUsers(users)
+        const now = new Date().toISOString()
+        const payload: User = {
+          id: result.user.uid,
+          email,
+          name,
+          role: "member",
+          isActive: true,
+          createdAt: now,
+          lastLogin: now,
+          customPermissions: defaultPermissionsForRole("member"),
+          preferences: defaultPreferences,
+        }
 
-        recordActivity("signup", { email, role })
+        await setDoc(doc(db, "users", result.user.uid), { ...payload, publicRole: "member", internalRole: "member" }, { merge: true })
+        recordActivity("signup", { email, role: "member" })
 
         addNotification({
-          message: "Account created successfully! Please wait for admin approval before logging in.",
+          message: "Account created successfully!",
           type: "success",
         })
-        return result
+        return { message: "Account created successfully!" }
       } catch (err: any) {
         console.error("Signup error:", err)
         setError(err.message)
@@ -186,7 +339,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setLoading(true)
 
     try {
-      await authService.logout()
+      await signOut(auth)
 
       if (user) {
         recordActivity("logout", { userId: user.id, email: user.email })
@@ -212,14 +365,37 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, [addNotification, user, recordActivity])
 
+  const updatePersonalSettings = useCallback(
+    async (settings: Partial<User["preferences"]>) => {
+      if (!user) {
+        throw new Error("User not authenticated")
+      }
+
+      const nextPreferences = {
+        ...user.preferences,
+        ...settings,
+      }
+
+      await setDoc(
+        doc(db, "users", user.id),
+        {
+          preferences: nextPreferences,
+          updatedAt: new Date().toISOString(),
+        },
+        { merge: true },
+      )
+
+      setUser({ ...user, preferences: nextPreferences })
+      setUserData(userData ? { ...userData, preferences: nextPreferences } : null)
+      recordActivity("personal_settings_update", { userId: user.id })
+    },
+    [recordActivity, user, userData],
+  )
+
   const updateUserStatus = useCallback(
     async (userId: string, isActive: boolean) => {
       try {
-        await authService.updateUserStatus(userId, isActive)
-
-        // Refresh users list
-        const users = await authService.getAllUsers()
-        setAllUsers(users)
+        await updateDoc(doc(db, "users", userId), { isActive })
 
         recordActivity("user_status_update", { userId, isActive })
         addNotification({
@@ -241,11 +417,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const updateUserPermissions = useCallback(
     async (userId: string, permissions: Partial<User["customPermissions"]>) => {
       try {
-        await authService.updateUserPermissions(userId, permissions)
-
-        // Refresh users list
-        const users = await authService.getAllUsers()
-        setAllUsers(users)
+        const userRef = doc(db, "users", userId)
+        const current = await getDoc(userRef)
+        const existing = current.exists() ? current.data()?.customPermissions ?? {} : {}
+        await updateDoc(userRef, {
+          customPermissions: { ...existing, ...permissions },
+        })
 
         recordActivity("permissions_update", { userId, permissions })
         addNotification({
@@ -264,41 +441,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     [addNotification, recordActivity],
   )
 
-  const updateUserRole = useCallback(
-    async (userId: string, role: "admin" | "member" | "viewer") => {
-      try {
-        await authService.updateUserRole(userId, role)
-
-        // Refresh users list
-        const users = await authService.getAllUsers()
-        setAllUsers(users)
-
-        recordActivity("role_update", { userId, newRole: role })
-
-        addNotification({
-          message: `User role updated to ${role === "admin" ? "Admin" : role === "viewer" ? "Viewer" : "Member"} successfully!`,
-          type: "success",
-        })
-      } catch (err: any) {
-        console.error("Error updating user role:", err)
-        addNotification({
-          message: `Failed to update user role: ${err.message}`,
-          type: "error",
-        })
-        throw err
-      }
-    },
-    [addNotification, recordActivity],
-  )
-
   const deleteUser = useCallback(
     async (userId: string) => {
       try {
-        await authService.deleteUser(userId)
-
-        // Refresh users list
-        const users = await authService.getAllUsers()
-        setAllUsers(users)
+        await deleteDoc(doc(db, "users", userId))
 
         recordActivity("user_deleted", { userId })
 
@@ -318,22 +464,40 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     [addNotification, recordActivity],
   )
 
-  const contextValue = {
-    user,
-    userData,
-    users: allUsers,
-    loading,
-    error,
-    login,
-    loginWithGoogle,
-    signup,
-    logout,
-    updateUserStatus,
-    updateUserPermissions,
-    updateUserRole,
-    deleteUser,
-    activityLog,
-  }
+  const contextValue = useMemo(
+    () => ({
+      user,
+      userData,
+      users: allUsers,
+      loading,
+      error,
+      login,
+      loginWithGoogle,
+      signup,
+      logout,
+      updatePersonalSettings,
+      updateUserStatus,
+      updateUserPermissions,
+      deleteUser,
+      activityLog,
+    }),
+    [
+      user,
+      userData,
+      allUsers,
+      loading,
+      error,
+      login,
+      loginWithGoogle,
+      signup,
+      logout,
+      updatePersonalSettings,
+      updateUserStatus,
+      updateUserPermissions,
+      deleteUser,
+      activityLog,
+    ],
+  )
 
   return <AuthContext.Provider value={contextValue}>{children}</AuthContext.Provider>
 }

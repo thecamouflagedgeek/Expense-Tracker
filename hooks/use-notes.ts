@@ -3,6 +3,8 @@
 import { useState, useEffect, useCallback } from "react"
 import { useAuth } from "@/contexts/auth-context"
 import { useNotification } from "@/contexts/notification-context"
+import { addDoc, collection, deleteDoc, doc, onSnapshot, query, updateDoc, where } from "firebase/firestore"
+import { db } from "@/lib/firebase"
 
 type Note = {
   id?: string
@@ -14,65 +16,21 @@ type Note = {
   isArchived?: boolean
 }
 
-const LOCAL_STORAGE_NOTES_KEY = "ctrlfund_notes"
-
-const MOCK_NOTES = [
-  {
-    id: "1",
-    title: "Project Meeting Notes",
-    content: "Discussed project timeline and deliverables. Next meeting scheduled for next week.",
-    createdAt: "2024-01-15T10:00:00Z",
-    updatedAt: "2024-01-15T10:00:00Z",
-    userId: "1",
-    isArchived: false,
-  },
-  {
-    id: "2",
-    title: "Budget Planning",
-    content: "Need to review Q1 budget allocations and plan for Q2 expenses.",
-    createdAt: "2024-01-14T14:30:00Z",
-    updatedAt: "2024-01-14T14:30:00Z",
-    userId: "1",
-    isArchived: false,
-  },
-  {
-    id: "3",
-    title: "Team Feedback",
-    content: "Collected feedback from team members on current processes and improvements.",
-    createdAt: "2024-01-13T09:15:00Z",
-    updatedAt: "2024-01-13T09:15:00Z",
-    userId: "2",
-    isArchived: false,
-  },
-]
-
 export const useNotes = () => {
   const { user } = useAuth()
   const { addNotification } = useNotification()
-  const [allNotes, setAllNotes] = useState<Note[]>(MOCK_NOTES)
   const [notes, setNotes] = useState<Note[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      try {
-        const storedNotes = localStorage.getItem(LOCAL_STORAGE_NOTES_KEY)
-        if (storedNotes) {
-          const parsed = JSON.parse(storedNotes)
-          setAllNotes(parsed)
-        } else {
-          localStorage.setItem(LOCAL_STORAGE_NOTES_KEY, JSON.stringify(MOCK_NOTES))
-        }
-      } catch (err: any) {
-        console.error("Error loading notes:", err)
-        setError("Failed to load notes from storage")
-      }
-      setLoading(false)
-    }
-  }, [])
+  const normalizeDate = (value: any) => {
+    if (!value) return new Date().toISOString()
+    if (typeof value === "string") return value
+    if (value?.toDate) return value.toDate().toISOString()
+    return new Date().toISOString()
+  }
 
-  const fetchNotes = useCallback(async () => {
+  useEffect(() => {
     if (!user) {
       setNotes([])
       setLoading(false)
@@ -82,33 +40,37 @@ export const useNotes = () => {
     setLoading(true)
     setError(null)
 
-    try {
-      await new Promise((resolve) => setTimeout(resolve, 200))
+    const notesQuery = query(collection(db, "notes"), where("userId", "==", user.id))
+    const unsubscribe = onSnapshot(
+      notesQuery,
+      (snapshot) => {
+        const nextNotes = snapshot.docs
+          .map((docSnap) => {
+            const data = docSnap.data()
+            return {
+              id: docSnap.id,
+              title: data.title ?? "",
+              content: data.content ?? "",
+              createdAt: normalizeDate(data.createdAt),
+              updatedAt: normalizeDate(data.updatedAt),
+              userId: data.userId ?? user.id,
+              isArchived: Boolean(data.isArchived),
+            }
+          })
+          .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
 
-      const userNotes = allNotes.filter((n) => n.userId === user.id)
-      setNotes(userNotes)
-    } catch (err: any) {
-      console.error("Error fetching notes:", err)
-      setError(err.message || "Failed to fetch notes.")
-      addNotification({
-        id: Date.now(),
-        message: `Failed to fetch notes: ${err.message}`,
-        type: "error",
-      })
-    } finally {
-      setLoading(false)
-    }
-  }, [user, allNotes, addNotification])
+        setNotes(nextNotes)
+        setLoading(false)
+      },
+      (err) => {
+        console.error("Error loading notes:", err)
+        setError("Failed to load notes")
+        setLoading(false)
+      },
+    )
 
-  useEffect(() => {
-    fetchNotes()
-  }, [fetchNotes])
-
-  useEffect(() => {
-    if (typeof window !== "undefined" && !loading) {
-      localStorage.setItem(LOCAL_STORAGE_NOTES_KEY, JSON.stringify(allNotes))
-    }
-  }, [allNotes, loading])
+    return () => unsubscribe()
+  }, [user])
 
   const createNote = useCallback(
     async (note: Omit<Note, "id" | "userId">) => {
@@ -123,16 +85,14 @@ export const useNotes = () => {
       }
 
       try {
-        await new Promise((resolve) => setTimeout(resolve, 200))
-
-        const newNote = {
+        const now = new Date().toISOString()
+        await addDoc(collection(db, "notes"), {
           ...note,
-          id: crypto.randomUUID(),
           userId: user.id,
           isArchived: false,
-        }
-
-        setAllNotes((prev) => [...prev, newNote])
+          createdAt: note.createdAt || now,
+          updatedAt: note.updatedAt || now,
+        })
         addNotification({
           id: Date.now(),
           message: `Note "${note.title}" created successfully!`,
@@ -165,11 +125,10 @@ export const useNotes = () => {
       }
 
       try {
-        await new Promise((resolve) => setTimeout(resolve, 200))
-
-        setAllNotes((prev) =>
-          prev.map((n) => (n.id === id ? { ...n, ...updatedFields, updatedAt: new Date().toISOString() } : n)),
-        )
+        await updateDoc(doc(db, "notes", id), {
+          ...updatedFields,
+          updatedAt: new Date().toISOString(),
+        })
         addNotification({
           id: Date.now(),
           message: `Note "${updatedFields.title || id}" updated successfully!`,
@@ -202,9 +161,7 @@ export const useNotes = () => {
       }
 
       try {
-        await new Promise((resolve) => setTimeout(resolve, 200))
-
-        setAllNotes((prev) => prev.filter((n) => n.id !== id))
+        await deleteDoc(doc(db, "notes", id))
         addNotification({
           id: Date.now(),
           message: `Note deleted successfully!`,
@@ -236,11 +193,10 @@ export const useNotes = () => {
       }
 
       try {
-        await new Promise((resolve) => setTimeout(resolve, 200))
-
-        setAllNotes((prev) =>
-          prev.map((n) => (n.id === id ? { ...n, isArchived, updatedAt: new Date().toISOString() } : n)),
-        )
+        await updateDoc(doc(db, "notes", id), {
+          isArchived,
+          updatedAt: new Date().toISOString(),
+        })
         addNotification({
           message: isArchived ? "Note archived." : "Note restored.",
           type: "success",
@@ -266,6 +222,5 @@ export const useNotes = () => {
     updateNote,
     deleteNote,
     setNoteArchived,
-    fetchNotes,
   }
 }
