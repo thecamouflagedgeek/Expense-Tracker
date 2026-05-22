@@ -1,0 +1,48 @@
+"use client"
+
+import type React from "react"
+import { useAuth } from "@/contexts/auth-context"
+import { useRole } from "@/contexts/role-context"
+import { usePathname, useRouter } from "next/navigation"
+import { useEffect } from "react"
+import { Loader2 } from "lucide-react"
+
+const publicPaths = ["/login", "/shared/note"]
+
+export function ProtectedRoute({ children }: { children: React.ReactNode }) {
+  const { user, loading } = useAuth()
+  const { currentRole, loading: roleLoading } = useRole()
+  const router = useRouter()
+  const pathname = usePathname()
+
+  useEffect(() => {
+    if (loading || roleLoading) {
+      return
+    }
+
+    const isPublicPath = publicPaths.some((path) => pathname.startsWith(path))
+
+    if (!user && !isPublicPath) {
+      router.replace("/login")
+    } else if (user && pathname === "/login") {
+      router.replace("/dashboard")
+    } else if (user && pathname.startsWith("/admin") && currentRole !== "owner") {
+      router.replace("/dashboard")
+    }
+  }, [user, loading, roleLoading, pathname, router, currentRole])
+
+  if (loading || roleLoading) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen grid-bg-pattern text-black">
+        <Loader2 className="h-10 w-10 animate-spin text-black stroke-[3]" />
+        <span className="sr-only">Loading application...</span>
+      </div>
+    )
+  }
+
+  if (user || publicPaths.some((path) => pathname.startsWith(path))) {
+    return <>{children}</>
+  }
+
+  return null
+}

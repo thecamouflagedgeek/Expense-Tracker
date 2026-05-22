@@ -1,0 +1,262 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Main Background: Beige-cream paper colour */
+    --background: 74 20% 94%;           /* #eff1e9 */
+    --foreground: 210 10% 4%;           /* #0c0d0e - Almost black for text */
+
+    /* Cards are pure white in the mockup, with rounded corners and soft shadow */
+    --card: 0 0% 100%;                  /* #ffffff */
+    --card-foreground: 210 10% 4%;      /* #0c0d0e */
+
+    /* Popovers / Dropdowns */
+    --popover: 0 0% 100%;               /* #ffffff */
+    --popover-foreground: 210 10% 4%;
+
+    /* Primary color: Electric Lime Green */
+    --primary: 76 95% 55%;              /* #bbf246 or #b5f529 - Electric Lime */
+    --primary-foreground: 0 0% 0%;       /* Black text on lime */
+
+    /* Secondary: Soft beige/grey for inputs and secondary buttons */
+    --secondary: 75 14% 90%;            /* #e9ebe2 */
+    --secondary-foreground: 210 10% 4%;
+
+    /* Muted elements */
+    --muted: 75 14% 90%;
+    --muted-foreground: 210 5% 45%;
+
+    /* Accent: Black for buttons or dark text, or Lime for highlight */
+    --accent: 76 95% 55%;
+    --accent-foreground: 0 0% 0%;
+
+    /* Borders: Very subtle grey-beige */
+    --border: 75 12% 86%;               /* #e0e2d9 */
+    --input: 75 12% 86%;
+    --ring: 76 95% 55%;                 /* Focus ring in lime */
+
+    --radius: 1.5rem;                   /* Premium large border radius (24px) for cards */
+  }
+
+  /* Dark mode overrides (disabled for absolute light theme mockup matching) */
+  .dark {
+    --background: 74 20% 94%;
+    --foreground: 210 10% 4%;
+    --card: 0 0% 100%;
+    --card-foreground: 210 10% 4%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 210 10% 4%;
+    --primary: 76 95% 55%;
+    --primary-foreground: 0 0% 0%;
+    --secondary: 75 14% 90%;
+    --secondary-foreground: 210 10% 4%;
+    --muted: 75 14% 90%;
+    --muted-foreground: 210 5% 45%;
+    --accent: 76 95% 55%;
+    --accent-foreground: 0 0% 0%;
+    --border: 75 12% 86%;
+    --input: 75 12% 86%;
+    --ring: 76 95% 55%;
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  body {
+    background-color: #eff1e9;
+    background-image: 
+      linear-gradient(rgba(0, 0, 0, 0.035) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0, 0, 0, 0.035) 1px, transparent 1px);
+    background-size: 24px 24px;
+    background-attachment: fixed;
+    color: #0c0d0e;
+    min-height: 100vh;
+  }
+}
+
+/* ============================================
+   COMPONENT CLASSES - PREMIUM DESIGN OVERHAUL
+   ============================================ */
+
+/* Main layout grid pattern background */
+.grid-bg-pattern {
+  background-color: #eff1e9;
+  background-image: 
+    linear-gradient(rgba(0, 0, 0, 0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 0, 0, 0.035) 1px, transparent 1px);
+  background-size: 24px 24px;
+  background-attachment: fixed;
+}
+
+/* Premium Solid Black Button with Lime Glow hover */
+.button-gradient {
+  background-color: #000000;
+  color: #ffffff;
+  border: 1px solid #000000;
+  border-radius: 9999px; /* Pill style */
+  font-weight: 600;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  position: relative;
+  overflow: hidden;
+}
+
+.button-gradient:hover {
+  background-color: #1a1a1a;
+  transform: translateY(-2px);
+  box-shadow: 
+    0 6px 20px rgba(0, 0, 0, 0.15),
+    0 0 12px rgba(204, 255, 0, 0.4); /* Lime glow */
+  border-color: #ccff00;
+}
+
+.button-gradient:active {
+  transform: translateY(0);
+}
+
+.button-gradient:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+/* Redesigned Card - Pure White, rounded corners, soft shadow */
+.card-gradient {
+  background: #ffffff !important;
+  border: 1px solid rgba(0, 0, 0, 0.04) !important;
+  border-radius: 1.5rem !important; /* 24px */
+  box-shadow: 
+    0 10px 30px -10px rgba(0, 0, 0, 0.04), 
+    0 1px 3px rgba(0, 0, 0, 0.02) !important;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  color: #0c0d0e !important;
+}
+
+.card-gradient:hover {
+  transform: translateY(-2px);
+  box-shadow: 
+    0 20px 40px -15px rgba(0, 0, 0, 0.06), 
+    0 1px 3px rgba(0, 0, 0, 0.02),
+    0 0 1px rgba(204, 255, 0, 0.4) !important;
+  border-color: rgba(204, 255, 0, 0.3) !important;
+}
+
+/* Stats Cards (similar style to card) */
+.stats-card {
+  background: #ffffff !important;
+  border: 1px solid rgba(0, 0, 0, 0.04) !important;
+  border-radius: 1.5rem !important;
+  box-shadow: 
+    0 10px 30px -10px rgba(0, 0, 0, 0.04), 
+    0 1px 3px rgba(0, 0, 0, 0.02) !important;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.stats-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 
+    0 20px 40px -15px rgba(0, 0, 0, 0.06), 
+    0 1px 3px rgba(0, 0, 0, 0.02) !important;
+  border-color: rgba(204, 255, 0, 0.4) !important;
+}
+
+/* Chart containers */
+.chart-container {
+  background: #ffffff !important;
+  border: 1px solid rgba(0, 0, 0, 0.04) !important;
+  border-radius: 1.5rem !important;
+  box-shadow: 
+    0 10px 30px -10px rgba(0, 0, 0, 0.04), 
+    0 1px 3px rgba(0, 0, 0, 0.02) !important;
+  padding: 24px;
+}
+
+/* Premium Highlights */
+.glow-accent {
+  box-shadow: 0 0 15px rgba(204, 255, 0, 0.25);
+  border: 1px solid rgba(204, 255, 0, 0.5);
+}
+
+.glow-accent-strong {
+  box-shadow: 
+    0 0 25px rgba(204, 255, 0, 0.35),
+    0 0 50px rgba(204, 255, 0, 0.15);
+  border: 1px solid rgba(204, 255, 0, 0.8);
+}
+
+/* Custom Calendar react-day-picker Theme */
+.rdp {
+  --rdp-background-color: #000000;
+  --rdp-text-color: #0c0d0e;
+  --rdp-border-color: #e0e2d9;
+  --rdp-accent-color: #ccff00;
+  --rdp-accent-color-foreground: #000000;
+  --rdp-selected-color: #000000;
+  --rdp-selected-color-foreground: #ffffff;
+  --rdp-hover-color: #eff1e9;
+  --rdp-hover-color-foreground: #ccff00;
+}
+
+.rdp-day_selected,
+.rdp-day_selected:hover {
+  background-color: #000000 !important;
+  color: #ffffff !important;
+}
+
+.rdp-day_today {
+  border: 1.5px solid #ccff00 !important;
+  color: #000000 !important;
+  font-weight: 700;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f0f1eb;
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #000000;
+  border-radius: 10px;
+  border: 2px solid #f0f1eb;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #2b2b2b;
+}
+
+/* Animations */
+@keyframes glow-pulse {
+  0%, 100% {
+    box-shadow: 0 0 15px rgba(204, 255, 0, 0.2);
+  }
+  50% {
+    box-shadow: 
+      0 0 25px rgba(204, 255, 0, 0.4),
+      0 0 45px rgba(204, 255, 0, 0.15);
+  }
+}
+
+.animate-glow-pulse {
+  animation: glow-pulse 2s ease-in-out infinite;
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-8px); }
+}
+
+.animate-float {
+  animation: float 3s ease-in-out infinite;
+}
