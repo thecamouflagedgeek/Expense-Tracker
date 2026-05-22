@@ -1,6 +1,6 @@
 import * as XLSX from "xlsx"
 import jsPDF from "jspdf"
-import html2canvas from "html2canvas"
+import autoTable from "jspdf-autotable"
 
 // Check if we're on the client side
 const isClient = typeof window !== "undefined"
@@ -68,56 +68,142 @@ export const exportToCSV = (data: any[], filename = "data.csv") => {
   }
 }
 
-// Export to PDF (based on DOM element)
-export const exportToPDF = async (elementId: string, filename = "export.pdf") => {
-  if (!isClient) {
-    console.warn("PDF export can only be used on the client side")
-    return
-  }
-
+export const exportDashboardPDF = (
+  transactions: any[],
+  users: any[],
+  notes: any[],
+  formatFn?: (amount: number) => string
+) => {
   try {
-    const element = document.getElementById(elementId)
-    if (!element) {
-      throw new Error(`Element with ID "${elementId}" not found`)
-    }
+    const doc = new jsPDF()
 
-    const canvas = await html2canvas(element, {
-      scale: 2,
-      useCORS: true,
-      allowTaint: true,
-      backgroundColor: "#eff1e9",
-      logging: false,
+    doc.setFillColor(0, 0, 0)
+    doc.rect(0, 0, 210, 30, "F")
+
+    doc.setTextColor(204, 255, 0)
+    doc.setFontSize(22)
+    doc.text("Expense Tracker Report", 14, 18)
+
+    doc.setTextColor(255, 255, 255)
+    doc.setFontSize(10)
+    doc.text(`Generated: ${new Date().toLocaleString()}`, 14, 25)
+
+    const totalExpenses = transactions.reduce(
+      (sum, t) => sum + t.amount,
+      0
+    )
+
+    const activeUsers = users.filter((u) => u.isActive).length
+
+    doc.setTextColor(0, 0, 0)
+
+    doc.setFontSize(16)
+    doc.text("Dashboard Summary", 14, 42)
+
+    autoTable(doc, {
+      startY: 48,
+      head: [["Metric", "Value"]],
+      body: [
+        [
+          "Total Transactions",
+          transactions.length.toString(),
+        ],
+        [
+          "Total Expenses",
+          formatFn
+            ? formatFn(totalExpenses)
+            : `₹${totalExpenses.toFixed(2)}`,
+        ],
+        [
+          "Active Users",
+          activeUsers.toString(),
+        ],
+        [
+          "Total Notes",
+          notes.length.toString(),
+        ],
+      ],
+      theme: "grid",
+      headStyles: {
+        fillColor: [0, 0, 0],
+        textColor: [204, 255, 0],
+      },
+      styles: {
+        fontSize: 10,
+      },
+    })
+    doc.setFontSize(16)
+
+    const categoriesToShow = [
+      "Transfer",
+      "Food",
+      "Shopping",
+      "Bills",
+    ]
+
+    const filteredTransactions = transactions.filter((t) =>
+      categoriesToShow.includes(t.category)
+    )
+
+    autoTable(doc, {
+      startY: (doc as any).lastAutoTable.finalY + 15,
+
+      head: [
+        [
+          "Title",
+          "Category",
+          "Amount",
+          "Date",
+        ],
+      ],
+
+      body: filteredTransactions.map((t) => [
+        t.title,
+        t.category,
+        formatFn
+          ? formatFn(t.amount)
+          : `₹${t.amount.toFixed(2)}`,
+        new Date(t.date).toLocaleDateString(),
+      ]),
+
+      theme: "striped",
+
+      headStyles: {
+        fillColor: [0, 0, 0],
+        textColor: [204, 255, 0],
+      },
+
+      styles: {
+        fontSize: 9,
+        cellPadding: 4,
+      },
+
+      columnStyles: {
+        0: { cellWidth: 60 },
+        1: { cellWidth: 35 },
+        2: { cellWidth: 35 },
+        3: { cellWidth: 40 },
+      },
     })
 
-    const imgData = canvas.toDataURL("image/png")
-    const pdf = new jsPDF("p", "mm", "a4")
-    const imgProps = pdf.getImageProperties(imgData)
-    const pdfWidth = pdf.internal.pageSize.getWidth()
-    const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width
+    const pageCount = doc.getNumberOfPages()
 
-    // Handle multiple pages if content is too long
-    if (pdfHeight > pdf.internal.pageSize.getHeight()) {
-      const pageHeight = pdf.internal.pageSize.getHeight()
-      let heightLeft = pdfHeight
-      let position = 0
+    for (let i = 1; i <= pageCount; i++) {
+      doc.setPage(i)
 
-      pdf.addImage(imgData, "PNG", 0, position, pdfWidth, pdfHeight)
-      heightLeft -= pageHeight
+      doc.setFontSize(10)
 
-      while (heightLeft >= 0) {
-        position = heightLeft - pdfHeight
-        pdf.addPage()
-        pdf.addImage(imgData, "PNG", 0, position, pdfWidth, pdfHeight)
-        heightLeft -= pageHeight
-      }
-    } else {
-      pdf.addImage(imgData, "PNG", 0, 0, pdfWidth, pdfHeight)
+      doc.text(
+        `Page ${i} of ${pageCount}`,
+        170,
+        290
+      )
     }
 
-    pdf.save(filename)
+    doc.save("dashboard-report.pdf")
   } catch (err) {
-    console.error("PDF Export Failed:", err)
-    throw new Error("Failed to export to PDF. Please try again.")
+    console.error(err)
+    throw new Error("PDF export failed")
   }
 }
 
