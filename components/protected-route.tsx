@@ -14,13 +14,12 @@ export function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { currentRole, loading: roleLoading } = useRole()
   const router = useRouter()
   const pathname = usePathname()
+  const isPublicPath = publicPaths.some((path) => pathname.startsWith(path))
 
   useEffect(() => {
     if (loading || roleLoading) {
       return
     }
-
-    const isPublicPath = publicPaths.some((path) => pathname.startsWith(path))
 
     if (!user && !isPublicPath) {
       router.replace("/login")
@@ -29,7 +28,11 @@ export function ProtectedRoute({ children }: { children: React.ReactNode }) {
     } else if (user && pathname.startsWith("/admin") && currentRole !== "owner") {
       router.replace("/dashboard")
     }
-  }, [user, loading, roleLoading, pathname, router, currentRole])
+  }, [user, loading, roleLoading, isPublicPath, pathname, router, currentRole])
+
+  if (isPublicPath) {
+    return <>{children}</>
+  }
 
   if (loading || roleLoading) {
     return (
@@ -40,7 +43,7 @@ export function ProtectedRoute({ children }: { children: React.ReactNode }) {
     )
   }
 
-  if (user || publicPaths.some((path) => pathname.startsWith(path))) {
+  if (user) {
     return <>{children}</>
   }
 
