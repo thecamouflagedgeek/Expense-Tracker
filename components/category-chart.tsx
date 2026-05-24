@@ -21,7 +21,7 @@ export function CategoryChart({ data }: CategoryChartProps) {
     <Card className="card-gradient border-none p-6">
       <CardHeader className="p-0 flex flex-row items-center justify-between">
         <CardTitle className="text-base font-bold text-black tracking-tight">Spending</CardTitle>
-        <div className="flex items-center gap-4 text-[10px] font-semibold text-black/50">
+        <div className="flex items-center gap-4 text-[10px] font-bold text-black/50">
           <div className="flex items-center gap-1.5">
             <span className="w-2.5 h-2.5 rounded-full bg-[#ccff00] border border-black/5" />
             <span>This month</span>
@@ -39,7 +39,7 @@ export function CategoryChart({ data }: CategoryChartProps) {
           ) : (
             <ResponsiveContainer width="100%" height="100%">
               <RadarChart cx="50%" cy="50%" outerRadius="75%" data={convertedData}>
-                <PolarGrid stroke="#e0e2d9" strokeDasharray="3 3" />
+                <PolarGrid stroke="#6b7280" strokeDasharray="3 3" />
                 <PolarAngleAxis 
                   dataKey="name" 
                   tick={{ fill: "#0c0d0e", fontSize: 10, fontWeight: 600 }}
