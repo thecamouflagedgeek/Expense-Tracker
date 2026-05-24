@@ -60,15 +60,29 @@ export default function DashboardPage() {
     return view === "archived" ? archivedTransactions : activeTransactions
   }, [activeTransactions, archivedTransactions, view])
 
+  const totalIncome = useMemo(() => {
+    return filteredTransactions
+      .filter((transaction) => transaction.type === "income")
+      .reduce((sum, transaction) => sum + Math.abs(transaction.amount), 0)
+  }, [filteredTransactions])
+
+  const totalExpense = useMemo(() => {
+    return filteredTransactions
+      .filter((transaction) => transaction.type === "expense")
+      .reduce((sum, transaction) => sum + Math.abs(transaction.amount), 0)
+  }, [filteredTransactions])
+
   const loading = transactionsLoading || notesLoading || usersLoading
   const error = transactionsError || notesError || usersError
 
   const totalExpenses = useMemo(() => {
-    return filteredTransactions.reduce((sum, t) => sum + t.amount, 0)
-  }, [filteredTransactions])
+    return totalExpense
+  }, [totalExpense])
 
   const totalActiveExpenses = useMemo(() => {
-    return activeTransactions.reduce((sum, t) => sum + t.amount, 0)
+    return activeTransactions
+      .filter((transaction) => transaction.type === "expense")
+      .reduce((sum, transaction) => sum + Math.abs(transaction.amount), 0)
   }, [activeTransactions])
 
   const averageExpense = useMemo(() => {
@@ -81,7 +95,7 @@ export default function DashboardPage() {
   const pendingUsers = users.filter((user) => !user.isActive)
 
   const workspaceAllocation = allocationBaseInINR * Math.max(activeUsers, 1)
-  const workspaceRemaining = Math.max(0, workspaceAllocation - totalActiveExpenses)
+  const workspaceRemaining = Math.max(0, workspaceAllocation + totalIncome - totalExpense)
   const transferCount = activeTransactions.filter((t) => t.category.toLowerCase() === "transfer").length
 
   const recentActivity = useMemo(() => {
@@ -123,7 +137,8 @@ export default function DashboardPage() {
   const categorySpendingData = useMemo(() => {
     const categoryData: { [key: string]: number } = {}
     filteredTransactions.forEach((t) => {
-      categoryData[t.category] = (categoryData[t.category] || 0) + t.amount
+      if (t.type !== "expense") return
+      categoryData[t.category] = (categoryData[t.category] || 0) + Math.abs(t.amount)
     })
     return Object.keys(categoryData).map((key) => ({ name: key, value: categoryData[key] }))
   }, [filteredTransactions])
@@ -462,7 +477,7 @@ export default function DashboardPage() {
             </div>
 
             <div className="lg:col-span-3 flex flex-col gap-6 md:gap-8">
-              <QuickTransfer availableBalanceInINR={Math.max(0, allocationBaseInINR - totalActiveExpenses)} />
+              <QuickTransfer availableBalanceInINR={Math.max(0, allocationBaseInINR + totalIncome - totalExpense)} />
               <PromoBanner />
             </div>
           </div>
@@ -673,6 +688,7 @@ function QuickTransfer({ availableBalanceInINR }: { availableBalanceInINR: numbe
       await addTransaction({
         title: `Transfer to ${friend.name}`,
         amount: amountInINR,
+        type: "expense",
         category: "Transfer",
         date: new Date().toISOString(),
         description: "Quick transfer sent from dashboard",

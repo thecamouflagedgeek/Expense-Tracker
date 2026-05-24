@@ -95,6 +95,7 @@ export function TransactionFilters({ filters, onFilterChange, categories }: Tran
             onSelect={handleDateSelect}
             numberOfMonths={2}
             initialFocus
+            required
           />
         </PopoverContent>
       </Popover>

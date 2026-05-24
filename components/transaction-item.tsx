@@ -27,6 +27,7 @@ type TransactionItemProps = {
     id: string
     title: string
     amount: number
+    type?: "income" | "expense"
     category: string
     date: string
     description?: string
@@ -77,8 +78,8 @@ export function TransactionItem({ transaction, showActions = true, children }: T
           {transaction.category}
         </span>
       </TableCell>
-      <TableCell className="font-black text-black text-sm">
-        -{format(transaction.amount)}
+      <TableCell className={`font-black text-sm ${transaction.type === "income" ? "text-emerald-600" : "text-red-600"}`}>
+        {transaction.type === "income" ? "+" : "-"}{format(Math.abs(transaction.amount))}
       </TableCell>
       <TableCell className="text-black/45 text-xs font-semibold">{formatDate(transaction.date)}</TableCell>
       {showActions && (

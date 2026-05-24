@@ -4,14 +4,14 @@ import type React from "react"
 import { createContext, useState, useEffect, useContext } from "react"
 import { useAuth } from "@/contexts/auth-context"
 import { useNotification } from "@/contexts/notification-context"
-import { addDoc, collection, deleteDoc, doc, onSnapshot, query, updateDoc, where } from "firebase/firestore"
+import { addDoc, collection, deleteDoc, doc, getDoc, onSnapshot, query, updateDoc, where } from "firebase/firestore"
 import { db } from "@/lib/firebase"
 
 export type Transaction = {
   id: string
   title: string
   amount: number
-  type?: "income" | "expense"
+  type: "income" | "expense"
   category: string
   date: string
   description?: string
@@ -48,6 +48,11 @@ export const TransactionProvider: React.FC<{ children: React.ReactNode }> = ({ c
     return new Date().toISOString()
   }
 
+  const normalizeAmountByType = (amount: number, type: Transaction["type"] = "expense") => {
+    const rawAmount = Math.abs(amount || 0)
+    return type === "income" ? rawAmount : -rawAmount
+  }
+
   useEffect(() => {
     if (!user) {
       setTransactions([])
@@ -70,7 +75,7 @@ export const TransactionProvider: React.FC<{ children: React.ReactNode }> = ({ c
             return {
               id: docSnap.id,
               title: data.title ?? "",
-              amount: data.amount ?? 0,
+              amount: normalizeAmountByType(data.amount ?? 0, transactionType),
               type: transactionType,
               category: data.category ?? "",
               date: normalizeDate(data.date),
@@ -108,6 +113,7 @@ export const TransactionProvider: React.FC<{ children: React.ReactNode }> = ({ c
     try {
       await addDoc(collection(db, "transactions"), {
         ...transaction,
+        amount: normalizeAmountByType(transaction.amount, transaction.type),
         userId: user.id,
         isArchived: false,
         createdAt: new Date().toISOString(),
@@ -135,8 +141,22 @@ export const TransactionProvider: React.FC<{ children: React.ReactNode }> = ({ c
     }
 
     try {
+      let nextFields = { ...updatedFields }
+
+      if (typeof nextFields.amount === "number") {
+        let transactionType = nextFields.type
+
+        if (!transactionType) {
+          const existingDoc = await getDoc(doc(db, "transactions", id))
+          const existingData = existingDoc.data()
+          transactionType = existingData?.type === "income" ? "income" : "expense"
+        }
+
+        nextFields.amount = normalizeAmountByType(nextFields.amount, transactionType)
+      }
+
       await updateDoc(doc(db, "transactions", id), {
-        ...updatedFields,
+        ...nextFields,
         updatedAt: new Date().toISOString(),
       })
       

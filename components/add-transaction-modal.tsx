@@ -18,13 +18,14 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { useTransactions } from "@/context/transaction-context"
 import { useCurrency } from "@/context/currency-context"
-import { Loader2, PlusCircle } from "lucide-react"
+import { Loader2, PlusCircle, ChevronDown } from "lucide-react"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { CalendarIcon } from "lucide-react"
 import { Calendar } from "@/components/ui/calendar"
 import { format } from "date-fns"
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList, CommandSeparator } from "@/components/ui/command"
 
 export function AddTransactionModal() {
   const [isOpen, setIsOpen] = useState(false)
@@ -32,6 +33,8 @@ export function AddTransactionModal() {
   const [amount, setAmount] = useState("")
   const [type, setType] = useState<"income" | "expense">("expense")
   const [category, setCategory] = useState("")
+  const [categoryOpen, setCategoryOpen] = useState(false)
+  const [categorySearch, setCategorySearch] = useState("")
   const [date, setDate] = useState<Date | undefined>(new Date())
   const [description, setDescription] = useState("")
   const [loading, setLoading] = useState(false)
@@ -39,7 +42,16 @@ export function AddTransactionModal() {
 
   const { addTransaction, categories } = useTransactions()
   const { symbol, convertToINR, currency } = useCurrency()
-  const availableCategories = categories.includes("Transfer") ? categories : [...categories, "Transfer"]
+  const availableCategories = Array.from(
+    new Set([...categories, "Transfer"].filter((categoryName) => categoryName && categoryName !== "New Category")),
+  )
+  const normalizedCategorySearch = categorySearch.trim().toLowerCase()
+  const filteredCategories = availableCategories.filter((categoryName) =>
+    categoryName.toLowerCase().includes(normalizedCategorySearch),
+  )
+  const canCreateCategory =
+    categorySearch.trim().length > 0 &&
+    !availableCategories.some((categoryName) => categoryName.toLowerCase() === normalizedCategorySearch)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -76,6 +88,8 @@ export function AddTransactionModal() {
       setAmount("")
       setType("expense")
       setCategory("")
+      setCategorySearch("")
+      setCategoryOpen(false)
       setDate(new Date())
       setDescription("")
     } catch (err: any) {
@@ -154,21 +168,76 @@ export function AddTransactionModal() {
               <Label htmlFor="category" className="text-right text-black/75 font-semibold text-xs">
                 Category
               </Label>
-              <Select value={category} onValueChange={setCategory} required>
-                <SelectTrigger className="col-span-3 bg-black/[0.02] border border-black/5 text-black hover:bg-black/[0.04] focus:bg-white focus:ring-2 focus:ring-black rounded-xl text-xs h-10">
-                  <SelectValue placeholder="Select a category" />
-                </SelectTrigger>
-                <SelectContent className="bg-white text-black border border-black/5 rounded-xl shadow-xl z-[999]">
-                  {availableCategories.map((cat) => (
-                    <SelectItem key={cat} value={cat} className="hover:bg-black/5 focus:bg-black/5 cursor-pointer font-semibold text-xs py-2 px-3">
-                      {cat}
-                    </SelectItem>
-                  ))}
-                  <SelectItem value="New Category" className="hover:bg-black/5 focus:bg-black/5 cursor-pointer font-semibold text-xs py-2 px-3 text-black/50">
-                    + Add New Category
-                  </SelectItem>
-                </SelectContent>
-              </Select>
+              <Popover
+                open={categoryOpen}
+                onOpenChange={(open) => {
+                  setCategoryOpen(open)
+                  if (open) {
+                    setCategorySearch(category)
+                  }
+                }}
+              >
+                <PopoverTrigger asChild>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="col-span-3 justify-between bg-black/[0.02] border border-black/5 text-black hover:bg-black/[0.04] focus:bg-white focus:ring-2 focus:ring-black rounded-xl text-xs h-10 font-normal"
+                  >
+                    <span className={`truncate ${!category ? "text-black/40" : "text-black"}`}>
+                      {category || "Select or type a category"}
+                    </span>
+                    <ChevronDown className="ml-2 h-4 w-4 text-black/40" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0 bg-white border border-black/5 rounded-2xl shadow-2xl z-[999]">
+                  <Command shouldFilter={false}>
+                    <CommandInput
+                      value={categorySearch}
+                      onValueChange={setCategorySearch}
+                      placeholder="Type a category"
+                    />
+                    <CommandList>
+                      <CommandEmpty>No category found.</CommandEmpty>
+                      <CommandGroup heading="Categories">
+                        {filteredCategories.map((cat) => (
+                          <CommandItem
+                            key={cat}
+                            value={cat}
+                            onSelect={() => {
+                              setCategory(cat)
+                              setCategorySearch(cat)
+                              setCategoryOpen(false)
+                            }}
+                            className="cursor-pointer font-semibold text-xs py-2 px-3"
+                          >
+                            {cat}
+                          </CommandItem>
+                        ))}
+                      </CommandGroup>
+                      {canCreateCategory && (
+                        <>
+                          <CommandSeparator />
+                          <CommandGroup heading="Create new">
+                            <CommandItem
+                              key={`create-${categorySearch.trim()}`}
+                              value={categorySearch.trim()}
+                              onSelect={() => {
+                                const nextCategory = categorySearch.trim()
+                                setCategory(nextCategory)
+                                setCategorySearch(nextCategory)
+                                setCategoryOpen(false)
+                              }}
+                              className="cursor-pointer font-semibold text-xs py-2 px-3 text-emerald-700"
+                            >
+                              + Add "{categorySearch.trim()}"
+                            </CommandItem>
+                          </CommandGroup>
+                        </>
+                      )}
+                    </CommandList>
+                  </Command>
+                </PopoverContent>
+              </Popover>
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="date" className="text-right text-black/75 font-semibold text-xs">

@@ -89,6 +89,7 @@ export function EditTransactionModal({ isOpen, onClose, transaction }: EditTrans
       await updateTransaction(transaction.id, {
         title,
         amount: amountInINR,
+        type: transaction?.type === "income" ? "income" : "expense",
         category,
         date: date.toISOString(),
         description,

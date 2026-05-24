@@ -110,6 +110,7 @@ export function RecentTransactions() {
           <div className="flex flex-col gap-3">
             {recentTransactions.map((transaction) => {
               const brand = getBrandDetails(transaction.title, transaction.category)
+              const isIncome = transaction.type === "income"
               return (
                 <Link
                   key={transaction.id}
@@ -138,11 +139,16 @@ export function RecentTransactions() {
                   </div>
                   {/* Amount (Negative prefixed for expenses) */}
                   <div className="flex flex-col items-end">
-                    <span className="font-black text-sm text-black tracking-tight">
-                      -{format(transaction.amount)}
+                    <span className={`font-black text-sm tracking-tight ${isIncome ? "text-emerald-600" : "text-black"}`}>
+                      {isIncome ? "+" : "-"}{format(Math.abs(transaction.amount))}
                     </span>
                     <span className="text-[9px] font-semibold text-black/30 mt-0.5 flex items-center gap-0.5">
-                      <TrendingDown className="w-2.5 h-2.5 text-red-500" /> Expense
+                      {isIncome ? (
+                        <TrendingDown className="w-2.5 h-2.5 text-emerald-500 rotate-180" />
+                      ) : (
+                        <TrendingDown className="w-2.5 h-2.5 text-red-500" />
+                      )}
+                      {isIncome ? "Income" : "Expense"}
                     </span>
                   </div>
                 </Link>
