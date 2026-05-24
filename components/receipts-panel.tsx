@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { FileText, Search, Trash2, Eye, Loader2, X } from "lucide-react"
-import { Dialog, DialogContent } from "@/components/ui/dialog"
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -202,6 +202,9 @@ export function ReceiptsPanel() {
 
       <Dialog open={Boolean(previewReceipt)} onOpenChange={(open) => { if (!open) setPreviewReceipt(null) }}>
         <DialogContent className="sm:max-w-[900px] w-[90vw] max-h-[90vh] rounded-2xl p-0 overflow-hidden">
+          <DialogHeader>
+            <DialogTitle>{previewReceipt?.fileName || "Receipt preview"}</DialogTitle>
+          </DialogHeader>
           <div className="relative bg-white">
             <Button
               variant="ghost"

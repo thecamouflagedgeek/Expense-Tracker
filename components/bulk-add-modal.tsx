@@ -120,6 +120,7 @@ export function BulkAddModal() {
         await addTransaction({
           title: transaction.title.trim(),
           amount: amountInINR,
+          type: transaction.type,
           category: transaction.category,
           date: new Date(transaction.date).toISOString(),
           description: transaction.notes.trim(),

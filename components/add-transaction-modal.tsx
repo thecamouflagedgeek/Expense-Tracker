@@ -30,6 +30,7 @@ export function AddTransactionModal() {
   const [isOpen, setIsOpen] = useState(false)
   const [title, setTitle] = useState("")
   const [amount, setAmount] = useState("")
+  const [type, setType] = useState<"income" | "expense">("expense")
   const [category, setCategory] = useState("")
   const [date, setDate] = useState<Date | undefined>(new Date())
   const [description, setDescription] = useState("")
@@ -65,6 +66,7 @@ export function AddTransactionModal() {
       await addTransaction({
         title,
         amount: amountInINR,
+        type,
         category,
         date: date.toISOString(),
         description,
@@ -72,6 +74,7 @@ export function AddTransactionModal() {
       setIsOpen(false)
       setTitle("")
       setAmount("")
+      setType("expense")
       setCategory("")
       setDate(new Date())
       setDescription("")
@@ -128,6 +131,24 @@ export function AddTransactionModal() {
                   required
                 />
               </div>
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="type" className="text-right text-black/75 font-semibold text-xs">
+                Type
+              </Label>
+              <Select value={type} onValueChange={(value) => setType(value as "income" | "expense")} required>
+                <SelectTrigger className="col-span-3 bg-black/[0.02] border border-black/5 text-black hover:bg-black/[0.04] focus:bg-white focus:ring-2 focus:ring-black rounded-xl text-xs h-10">
+                  <SelectValue placeholder="Select type" />
+                </SelectTrigger>
+                <SelectContent className="bg-white text-black border border-black/5 rounded-xl shadow-xl z-[999]">
+                  <SelectItem value="income" className="hover:bg-black/5 focus:bg-black/5 cursor-pointer font-semibold text-xs py-2 px-3">
+                    Income
+                  </SelectItem>
+                  <SelectItem value="expense" className="hover:bg-black/5 focus:bg-black/5 cursor-pointer font-semibold text-xs py-2 px-3">
+                    Expense
+                  </SelectItem>
+                </SelectContent>
+              </Select>
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="category" className="text-right text-black/75 font-semibold text-xs">

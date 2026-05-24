@@ -11,6 +11,7 @@ export type Transaction = {
   id: string
   title: string
   amount: number
+  type?: "income" | "expense"
   category: string
   date: string
   description?: string
@@ -65,10 +66,12 @@ export const TransactionProvider: React.FC<{ children: React.ReactNode }> = ({ c
         const nextTransactions = snapshot.docs
           .map((docSnap) => {
             const data = docSnap.data()
+            const transactionType: Transaction["type"] = data.type === "income" ? "income" : "expense"
             return {
               id: docSnap.id,
               title: data.title ?? "",
               amount: data.amount ?? 0,
+              type: transactionType,
               category: data.category ?? "",
               date: normalizeDate(data.date),
               description: data.description ?? "",
