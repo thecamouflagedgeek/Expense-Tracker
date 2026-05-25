@@ -1,5 +1,6 @@
 import * as XLSX from "xlsx"
 import jsPDF from "jspdf"
+import autoTable from "jspdf-autotable"
 import html2canvas from "html2canvas"
 
 // Check if we're on the client side
@@ -202,5 +203,254 @@ export const exportNotesToCSV = (notes: any[]) => {
   } catch (err) {
     console.error("Notes CSV Export Failed:", err)
     throw err
+  }
+}
+
+// Dashboard Summary PDF Export with structured columns
+export const exportDashboardSummaryPDF = (
+  dashboardMetrics: {
+    totalExpenses: number
+    totalIncome: number
+    averageExpense: number
+    totalTransactions: number
+    totalNotes: number
+    activeUsers: number
+    pendingUsers: number
+    workspaceAllocation: number
+    workspaceRemaining: number
+    categorySpendingData: Array<{ name: string; value: number }>
+    transferCount: number
+    incomeCount: number
+    expenseCount: number
+  },
+  formatFn: (amount: number) => string,
+  filename = "dashboard-summary.pdf"
+) => {
+  if (!isClient) {
+    console.warn("PDF export can only be used on the client side")
+    return
+  }
+
+  try {
+    const doc = new jsPDF()
+    const pageWidth = doc.internal.pageSize.getWidth()
+    const pageHeight = doc.internal.pageSize.getHeight()
+    let currentY = 20
+
+    // Header
+    doc.setFontSize(20)
+    doc.setTextColor(0, 0, 0)
+    doc.text("Dashboard Summary Report", 14, currentY)
+
+    // Date
+    currentY += 10
+    doc.setFontSize(10)
+    doc.setTextColor(100, 100, 100)
+    doc.text(`Generated: ${new Date().toLocaleString()}`, 14, currentY)
+
+    currentY += 15
+
+    // Section 1: Key Financial Metrics
+    doc.setFontSize(12)
+    doc.setTextColor(0, 0, 0)
+    doc.text("Financial Summary", 14, currentY)
+    currentY += 8
+
+    const financialMetrics = [
+      ["Metric", "Value"],
+      ["Total Income", formatFn(dashboardMetrics.totalIncome)],
+      ["Total Expenses", formatFn(dashboardMetrics.totalExpenses)],
+      ["Average Expense", formatFn(dashboardMetrics.averageExpense)],
+      ["Net Balance", formatFn(dashboardMetrics.totalIncome - dashboardMetrics.totalExpenses)],
+    ]
+
+    autoTable(doc, {
+      startY: currentY,
+      head: financialMetrics.slice(0, 1),
+      body: financialMetrics.slice(1),
+      theme: "striped",
+      styles: {
+        font: "helvetica",
+        textColor: [12, 13, 14],
+        fillColor: [255, 255, 255],
+        lineColor: [200, 200, 200],
+        lineWidth: 0.1,
+        fontSize: 10,
+      },
+      headStyles: {
+        fillColor: [0, 0, 0],
+        textColor: [255, 255, 255],
+        fontStyle: "bold",
+        fontSize: 11,
+      },
+      alternateRowStyles: {
+        fillColor: [245, 245, 245],
+      },
+      margin: { left: 14, right: 14 },
+      columnStyles: {
+        0: { cellWidth: "auto" },
+        1: { cellWidth: "auto", halign: "right" },
+      },
+    })
+
+    currentY = (doc as any).lastAutoTable.finalY + 12
+
+    // Section 2: Transaction Summary
+    doc.setFontSize(12)
+    doc.setTextColor(0, 0, 0)
+    doc.text("Transaction Summary", 14, currentY)
+    currentY += 8
+
+    const transactionMetrics = [
+      ["Type", "Count"],
+      ["Income Transactions", String(dashboardMetrics.incomeCount)],
+      ["Expense Transactions", String(dashboardMetrics.expenseCount)],
+      ["Transfers", String(dashboardMetrics.transferCount)],
+      ["Total Transactions", String(dashboardMetrics.totalTransactions)],
+    ]
+
+    autoTable(doc, {
+      startY: currentY,
+      head: transactionMetrics.slice(0, 1),
+      body: transactionMetrics.slice(1),
+      theme: "striped",
+      styles: {
+        font: "helvetica",
+        textColor: [12, 13, 14],
+        fillColor: [255, 255, 255],
+        lineColor: [200, 200, 200],
+        lineWidth: 0.1,
+        fontSize: 10,
+      },
+      headStyles: {
+        fillColor: [0, 0, 0],
+        textColor: [255, 255, 255],
+        fontStyle: "bold",
+        fontSize: 11,
+      },
+      alternateRowStyles: {
+        fillColor: [245, 245, 245],
+      },
+      margin: { left: 14, right: 14 },
+    })
+
+    currentY = (doc as any).lastAutoTable.finalY + 12
+
+    // Section 3: Category Breakdown (top 10)
+    if (dashboardMetrics.categorySpendingData.length > 0) {
+      doc.setFontSize(12)
+      doc.setTextColor(0, 0, 0)
+      doc.text("Expense Categories", 14, currentY)
+      currentY += 8
+
+      const topCategories = dashboardMetrics.categorySpendingData
+        .sort((a, b) => b.value - a.value)
+        .slice(0, 10)
+
+      const categoryMetrics = [
+        ["Category", "Amount"],
+        ...topCategories.map((c) => [c.name, formatFn(c.value)]),
+      ]
+
+      autoTable(doc, {
+        startY: currentY,
+        head: categoryMetrics.slice(0, 1),
+        body: categoryMetrics.slice(1),
+        theme: "striped",
+        styles: {
+          font: "helvetica",
+          textColor: [12, 13, 14],
+          fillColor: [255, 255, 255],
+          lineColor: [200, 200, 200],
+          lineWidth: 0.1,
+          fontSize: 10,
+        },
+        headStyles: {
+          fillColor: [0, 0, 0],
+          textColor: [255, 255, 255],
+          fontStyle: "bold",
+          fontSize: 11,
+        },
+        alternateRowStyles: {
+          fillColor: [245, 245, 245],
+        },
+        margin: { left: 14, right: 14 },
+        columnStyles: {
+          0: { cellWidth: "auto" },
+          1: { cellWidth: "auto", halign: "right" },
+        },
+        didDrawPage: (data) => {
+          // Footer
+          let pageStr = "Page " + doc.internal.getNumberOfPages()
+          if (typeof doc.putTotalPages === "function") {
+            pageStr = pageStr + " of " + doc.putTotalPages()
+          }
+          doc.setFontSize(9)
+          doc.setTextColor(150, 150, 150)
+          doc.text(pageStr, pageWidth - 25, pageHeight - 10)
+        },
+      })
+
+      currentY = (doc as any).lastAutoTable.finalY + 12
+    }
+
+    // Section 4: Workspace Information
+    doc.setFontSize(12)
+    doc.setTextColor(0, 0, 0)
+    doc.text("Workspace Information", 14, currentY)
+    currentY += 8
+
+    const workspaceMetrics = [
+      ["Metric", "Value"],
+      ["Active Users", String(dashboardMetrics.activeUsers)],
+      ["Pending Users", String(dashboardMetrics.pendingUsers)],
+      ["Total Notes", String(dashboardMetrics.totalNotes)],
+      ["Workspace Allocation", formatFn(dashboardMetrics.workspaceAllocation)],
+      ["Remaining Balance", formatFn(dashboardMetrics.workspaceRemaining)],
+    ]
+
+    autoTable(doc, {
+      startY: currentY,
+      head: workspaceMetrics.slice(0, 1),
+      body: workspaceMetrics.slice(1),
+      theme: "striped",
+      styles: {
+        font: "helvetica",
+        textColor: [12, 13, 14],
+        fillColor: [255, 255, 255],
+        lineColor: [200, 200, 200],
+        lineWidth: 0.1,
+        fontSize: 10,
+      },
+      headStyles: {
+        fillColor: [0, 0, 0],
+        textColor: [255, 255, 255],
+        fontStyle: "bold",
+        fontSize: 11,
+      },
+      alternateRowStyles: {
+        fillColor: [245, 245, 245],
+      },
+      margin: { left: 14, right: 14 },
+      columnStyles: {
+        0: { cellWidth: "auto" },
+        1: { cellWidth: "auto", halign: "right" },
+      },
+      didDrawPage: (data) => {
+        // Footer
+        let pageStr = "Page " + doc.internal.getNumberOfPages()
+        if (typeof doc.putTotalPages === "function") {
+          pageStr = pageStr + " of " + doc.putTotalPages()
+        }
+        doc.setFontSize(9)
+        doc.setTextColor(150, 150, 150)
+        doc.text(pageStr, pageWidth - 25, pageHeight - 10)
+      },
+    })
+
+    doc.save(filename)
+  } catch (err) {
+    console.error("Dashboard PDF Export Failed:", err)
+    throw new Error("Failed to generate PDF. Please try again.")
   }
 }
