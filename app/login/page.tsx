@@ -91,7 +91,7 @@ export default function LoginPage() {
           <CardHeader className="text-center p-0 mb-5 md:mb-6">
             <motion.div initial={{ scale: 0.8 }} animate={{ scale: 1 }} transition={{ delay: 0.2, duration: 0.3 }}>
               <Image
-                src="/piggy_bank.png"
+                src="/expense_tracker_logo.png"
                 alt="CtrlFund Logo"
                 width={80}
                 height={80}
