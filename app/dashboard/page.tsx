@@ -1,5 +1,4 @@
 "use client";
-
 import { useMemo, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
@@ -1054,14 +1053,10 @@ function QuickTransfer({
    SUB-COMPONENT 3: PROMO BANNER (PIGGY BANK BANNER)
    ======================================================== */
 function PromoBanner() {
+  const router = useRouter();
   const { addNotification } = useNotification();
-
   const handleLearnMore = () => {
-    addNotification({
-      message:
-        "Piggy Bank promotions are sponsored by CTRL Fund Ltd. Members enjoy high-yield savings interest rates!",
-      type: "info",
-    });
+    router.push("/financial-education");
   };
 
   return (
@@ -1093,13 +1088,7 @@ function PromoBanner() {
         />
       </div>
 
-      {/* Action Button */}
-      <button
-        onClick={handleLearnMore}
-        className="w-full bg-black text-white hover:bg-black/90 font-black text-[10px] uppercase tracking-wider py-3 rounded-full transition-all duration-200 shadow-md border border-black hover:border-black/80 hover:shadow-[0_0_12px_rgba(204,255,0,0.6)] focus:outline-none"
-      >
-        Learn More
-      </button>
+      <Button onClick={handleLearnMore}>Learn More</Button>
     </div>
   );
 }
