@@ -1,11 +1,21 @@
 import * as XLSX from "xlsx"
 import jsPDF from "jspdf"
-import autoTable from "jspdf-autotable"
+import { autoTable } from "jspdf-autotable"
 import html2canvas from "html2canvas"
 
 // Check if we're on the client side
 const isClient = typeof window !== "undefined"
+const safeCurrency = (value: any) => {
+  const numericValue =
+    typeof value === "string"
+      ? Number(value.replace(/[^\d.-]/g, ""))
+      : Number(value)
 
+  return `Rs. ${numericValue.toLocaleString("en-IN", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  })}`
+}
 // Export to Excel
 export const exportToExcel = (data: any[], filename = "data.xlsx") => {
   if (!isClient) {
@@ -54,9 +64,11 @@ export const exportToCSV = (data: any[], filename = "data.csv") => {
 
     const link = document.createElement("a")
     const url = URL.createObjectURL(blob)
+
     link.setAttribute("href", url)
     link.setAttribute("download", filename)
     link.style.visibility = "hidden"
+
     document.body.appendChild(link)
     link.click()
     document.body.removeChild(link)
@@ -78,6 +90,7 @@ export const exportToPDF = async (elementId: string, filename = "export.pdf") =>
 
   try {
     const element = document.getElementById(elementId)
+
     if (!element) {
       throw new Error(`Element with ID "${elementId}" not found`)
     }
@@ -91,24 +104,31 @@ export const exportToPDF = async (elementId: string, filename = "export.pdf") =>
     })
 
     const imgData = canvas.toDataURL("image/png")
+
     const pdf = new jsPDF("p", "mm", "a4")
+
     const imgProps = pdf.getImageProperties(imgData)
+
     const pdfWidth = pdf.internal.pageSize.getWidth()
     const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width
 
     // Handle multiple pages if content is too long
     if (pdfHeight > pdf.internal.pageSize.getHeight()) {
       const pageHeight = pdf.internal.pageSize.getHeight()
+
       let heightLeft = pdfHeight
       let position = 0
 
       pdf.addImage(imgData, "PNG", 0, position, pdfWidth, pdfHeight)
+
       heightLeft -= pageHeight
 
       while (heightLeft >= 0) {
         position = heightLeft - pdfHeight
+
         pdf.addPage()
         pdf.addImage(imgData, "PNG", 0, position, pdfWidth, pdfHeight)
+
         heightLeft -= pageHeight
       }
     } else {
@@ -123,7 +143,10 @@ export const exportToPDF = async (elementId: string, filename = "export.pdf") =>
 }
 
 // Specific export functions for transactions
-export const exportTransactionsToExcel = (transactions: any[], formatFn?: (amount: number) => string) => {
+export const exportTransactionsToExcel = (
+  transactions: any[],
+  formatFn?: (amount: number) => string
+) => {
   try {
     if (!transactions || transactions.length === 0) {
       throw new Error("No transactions to export")
@@ -132,11 +155,18 @@ export const exportTransactionsToExcel = (transactions: any[], formatFn?: (amoun
     const data = transactions.map((t) => ({
       ID: t.id,
       Title: t.title,
-      Amount: formatFn ? formatFn(t.amount) : `₹${t.amount.toFixed(2)}`,
+      Amount:
+      formatFn
+       ? formatFn(t.amount)
+       : `Rs. ${Number(t.amount).toLocaleString("en-IN", {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      })}`,
       Category: t.category,
       Date: new Date(t.date).toLocaleDateString(),
       Description: t.description || "",
     }))
+
     exportToExcel(data, "transactions.xlsx")
   } catch (err) {
     console.error("Transaction Excel Export Failed:", err)
@@ -144,7 +174,10 @@ export const exportTransactionsToExcel = (transactions: any[], formatFn?: (amoun
   }
 }
 
-export const exportTransactionsToCSV = (transactions: any[], formatFn?: (amount: number) => string) => {
+export const exportTransactionsToCSV = (
+  transactions: any[],
+  formatFn?: (amount: number) => string
+) => {
   try {
     if (!transactions || transactions.length === 0) {
       throw new Error("No transactions to export")
@@ -153,11 +186,18 @@ export const exportTransactionsToCSV = (transactions: any[], formatFn?: (amount:
     const data = transactions.map((t) => ({
       ID: t.id,
       Title: t.title,
-      Amount: formatFn ? formatFn(t.amount) : `₹${t.amount.toFixed(2)}`,
+      Amount:
+  formatFn
+    ? formatFn(t.amount)
+    : `Rs. ${Number(t.amount).toLocaleString("en-IN", {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      })}`,
       Category: t.category,
       Date: new Date(t.date).toLocaleDateString(),
       Description: t.description || "",
     }))
+
     exportToCSV(data, "transactions.csv")
   } catch (err) {
     console.error("Transaction CSV Export Failed:", err)
@@ -179,6 +219,7 @@ export const exportNotesToExcel = (notes: any[]) => {
       "Created At": new Date(n.createdAt).toLocaleDateString(),
       "Updated At": new Date(n.updatedAt).toLocaleDateString(),
     }))
+
     exportToExcel(data, "notes.xlsx")
   } catch (err) {
     console.error("Notes Excel Export Failed:", err)
@@ -199,6 +240,7 @@ export const exportNotesToCSV = (notes: any[]) => {
       "Created At": new Date(n.createdAt).toLocaleDateString(),
       "Updated At": new Date(n.updatedAt).toLocaleDateString(),
     }))
+
     exportToCSV(data, "notes.csv")
   } catch (err) {
     console.error("Notes CSV Export Failed:", err)
@@ -233,9 +275,18 @@ export const exportDashboardSummaryPDF = (
 
   try {
     const doc = new jsPDF()
+
     const pageWidth = doc.internal.pageSize.getWidth()
     const pageHeight = doc.internal.pageSize.getHeight()
+
     let currentY = 20
+
+    const formatCurrency = (amount: number) => {
+      return `Rs. ${Number(amount).toLocaleString("en-IN", {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      })}`
+    }
 
     // Header
     doc.setFontSize(20)
@@ -244,31 +295,41 @@ export const exportDashboardSummaryPDF = (
 
     // Date
     currentY += 10
+
     doc.setFontSize(10)
     doc.setTextColor(100, 100, 100)
+
     doc.text(`Generated: ${new Date().toLocaleString()}`, 14, currentY)
 
     currentY += 15
 
-    // Section 1: Key Financial Metrics
+    // Section 1: Financial Summary
     doc.setFontSize(12)
     doc.setTextColor(0, 0, 0)
     doc.text("Financial Summary", 14, currentY)
+
     currentY += 8
 
     const financialMetrics = [
       ["Metric", "Value"],
-      ["Total Income", formatFn(dashboardMetrics.totalIncome)],
-      ["Total Expenses", formatFn(dashboardMetrics.totalExpenses)],
-      ["Average Expense", formatFn(dashboardMetrics.averageExpense)],
-      ["Net Balance", formatFn(dashboardMetrics.totalIncome - dashboardMetrics.totalExpenses)],
+      ["Total Income", formatCurrency(dashboardMetrics.totalIncome)],
+      ["Total Expenses", formatCurrency(dashboardMetrics.totalExpenses)],
+      ["Average Expense", formatCurrency(dashboardMetrics.averageExpense)],
+      [
+        "Net Balance",
+        formatCurrency(dashboardMetrics.totalIncome - dashboardMetrics.totalExpenses),
+      ],
     ]
 
     autoTable(doc, {
       startY: currentY,
+
       head: financialMetrics.slice(0, 1),
+
       body: financialMetrics.slice(1),
+
       theme: "striped",
+
       styles: {
         font: "helvetica",
         textColor: [12, 13, 14],
@@ -276,20 +337,34 @@ export const exportDashboardSummaryPDF = (
         lineColor: [200, 200, 200],
         lineWidth: 0.1,
         fontSize: 10,
+        overflow: "linebreak",
+        cellPadding: 3,
       },
+
       headStyles: {
         fillColor: [0, 0, 0],
         textColor: [255, 255, 255],
         fontStyle: "bold",
         fontSize: 11,
       },
+
       alternateRowStyles: {
         fillColor: [245, 245, 245],
       },
-      margin: { left: 14, right: 14 },
+
+      margin: {
+        left: 14,
+        right: 14,
+      },
+
       columnStyles: {
-        0: { cellWidth: "auto" },
-        1: { cellWidth: "auto", halign: "right" },
+        0: {
+          cellWidth: 80,
+        },
+        1: {
+          cellWidth: 70,
+          halign: "right",
+        },
       },
     })
 
@@ -299,6 +374,7 @@ export const exportDashboardSummaryPDF = (
     doc.setFontSize(12)
     doc.setTextColor(0, 0, 0)
     doc.text("Transaction Summary", 14, currentY)
+
     currentY += 8
 
     const transactionMetrics = [
@@ -311,9 +387,13 @@ export const exportDashboardSummaryPDF = (
 
     autoTable(doc, {
       startY: currentY,
+
       head: transactionMetrics.slice(0, 1),
+
       body: transactionMetrics.slice(1),
+
       theme: "striped",
+
       styles: {
         font: "helvetica",
         textColor: [12, 13, 14],
@@ -321,26 +401,45 @@ export const exportDashboardSummaryPDF = (
         lineColor: [200, 200, 200],
         lineWidth: 0.1,
         fontSize: 10,
+        overflow: "linebreak",
+        cellPadding: 3,
       },
+
       headStyles: {
         fillColor: [0, 0, 0],
         textColor: [255, 255, 255],
         fontStyle: "bold",
         fontSize: 11,
       },
+
       alternateRowStyles: {
         fillColor: [245, 245, 245],
       },
-      margin: { left: 14, right: 14 },
+
+      margin: {
+        left: 14,
+        right: 14,
+      },
+
+      columnStyles: {
+        0: {
+          cellWidth: 80,
+        },
+        1: {
+          cellWidth: 70,
+          halign: "right",
+        },
+      },
     })
 
     currentY = (doc as any).lastAutoTable.finalY + 12
 
-    // Section 3: Category Breakdown (top 10)
+    // Section 3: Category Breakdown
     if (dashboardMetrics.categorySpendingData.length > 0) {
       doc.setFontSize(12)
       doc.setTextColor(0, 0, 0)
       doc.text("Expense Categories", 14, currentY)
+
       currentY += 8
 
       const topCategories = dashboardMetrics.categorySpendingData
@@ -349,14 +448,18 @@ export const exportDashboardSummaryPDF = (
 
       const categoryMetrics = [
         ["Category", "Amount"],
-        ...topCategories.map((c) => [c.name, formatFn(c.value)]),
+        ...topCategories.map((c) => [c.name, formatCurrency(c.value)]),
       ]
 
       autoTable(doc, {
         startY: currentY,
+
         head: categoryMetrics.slice(0, 1),
+
         body: categoryMetrics.slice(1),
+
         theme: "striped",
+
         styles: {
           font: "helvetica",
           textColor: [12, 13, 14],
@@ -364,30 +467,46 @@ export const exportDashboardSummaryPDF = (
           lineColor: [200, 200, 200],
           lineWidth: 0.1,
           fontSize: 10,
+          overflow: "linebreak",
+          cellPadding: 3,
         },
+
         headStyles: {
           fillColor: [0, 0, 0],
           textColor: [255, 255, 255],
           fontStyle: "bold",
           fontSize: 11,
         },
+
         alternateRowStyles: {
           fillColor: [245, 245, 245],
         },
-        margin: { left: 14, right: 14 },
-        columnStyles: {
-          0: { cellWidth: "auto" },
-          1: { cellWidth: "auto", halign: "right" },
+
+        margin: {
+          left: 14,
+          right: 14,
         },
-        didDrawPage: (data) => {
-          // Footer
-          let pageStr = "Page " + doc.internal.getNumberOfPages()
-          if (typeof doc.putTotalPages === "function") {
-            pageStr = pageStr + " of " + doc.putTotalPages()
-          }
+
+        columnStyles: {
+          0: {
+            cellWidth: 90,
+          },
+          1: {
+            cellWidth: 60,
+            halign: "right",
+          },
+        },
+
+        didDrawPage: () => {
+          const pageNumber =
+            ((doc.internal as any).getNumberOfPages?.() ??
+              (doc.internal as any).pages?.length ??
+              1) - 1
+
           doc.setFontSize(9)
           doc.setTextColor(150, 150, 150)
-          doc.text(pageStr, pageWidth - 25, pageHeight - 10)
+
+          doc.text(`Page ${pageNumber}`, pageWidth - 25, pageHeight - 10)
         },
       })
 
@@ -398,6 +517,7 @@ export const exportDashboardSummaryPDF = (
     doc.setFontSize(12)
     doc.setTextColor(0, 0, 0)
     doc.text("Workspace Information", 14, currentY)
+
     currentY += 8
 
     const workspaceMetrics = [
@@ -405,15 +525,19 @@ export const exportDashboardSummaryPDF = (
       ["Active Users", String(dashboardMetrics.activeUsers)],
       ["Pending Users", String(dashboardMetrics.pendingUsers)],
       ["Total Notes", String(dashboardMetrics.totalNotes)],
-      ["Workspace Allocation", formatFn(dashboardMetrics.workspaceAllocation)],
-      ["Remaining Balance", formatFn(dashboardMetrics.workspaceRemaining)],
+      ["Workspace Allocation", formatCurrency(dashboardMetrics.workspaceAllocation)],
+      ["Remaining Balance", formatCurrency(dashboardMetrics.workspaceRemaining)],
     ]
 
     autoTable(doc, {
       startY: currentY,
+
       head: workspaceMetrics.slice(0, 1),
+
       body: workspaceMetrics.slice(1),
+
       theme: "striped",
+
       styles: {
         font: "helvetica",
         textColor: [12, 13, 14],
@@ -421,30 +545,46 @@ export const exportDashboardSummaryPDF = (
         lineColor: [200, 200, 200],
         lineWidth: 0.1,
         fontSize: 10,
+        overflow: "linebreak",
+        cellPadding: 3,
       },
+
       headStyles: {
         fillColor: [0, 0, 0],
         textColor: [255, 255, 255],
         fontStyle: "bold",
         fontSize: 11,
       },
+
       alternateRowStyles: {
         fillColor: [245, 245, 245],
       },
-      margin: { left: 14, right: 14 },
-      columnStyles: {
-        0: { cellWidth: "auto" },
-        1: { cellWidth: "auto", halign: "right" },
+
+      margin: {
+        left: 14,
+        right: 14,
       },
-      didDrawPage: (data) => {
-        // Footer
-        let pageStr = "Page " + doc.internal.getNumberOfPages()
-        if (typeof doc.putTotalPages === "function") {
-          pageStr = pageStr + " of " + doc.putTotalPages()
-        }
+
+      columnStyles: {
+        0: {
+          cellWidth: 80,
+        },
+        1: {
+          cellWidth: 70,
+          halign: "right",
+        },
+      },
+
+      didDrawPage: () => {
+        const pageNumber =
+          ((doc.internal as any).getNumberOfPages?.() ??
+            (doc.internal as any).pages?.length ??
+            1) - 1
+
         doc.setFontSize(9)
         doc.setTextColor(150, 150, 150)
-        doc.text(pageStr, pageWidth - 25, pageHeight - 10)
+
+        doc.text(`Page ${pageNumber}`, pageWidth - 25, pageHeight - 10)
       },
     })
 
