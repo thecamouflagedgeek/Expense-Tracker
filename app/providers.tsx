@@ -9,25 +9,38 @@ import { CurrencyProvider } from "@/context/currency-context";
 import { Navigation } from "@/components/navigation";
 import { ProtectedRoute } from "@/components/protected-route";
 import { Toaster } from "@/components/ui/toaster";
+import { ThemeProvider } from "@/components/theme-provider";
+import { usePathname } from "next/navigation";
 
 export function ClientProviders({ children }: { children: React.ReactNode }) {
+  const pathname = usePathname()
+  const isLandingPage = pathname === "/"
+
   return (
-    <NotificationProvider>
-      <AuthProvider>
-        <RoleProvider>
-          <CurrencyProvider>
-            <TransactionProvider>
-              <div className="min-h-screen grid-bg-pattern font-sans antialiased text-[#0c0d0e]">
-                <Navigation />
-                <main className="md:pl-28 pt-24 pr-4 md:pr-8 pb-24 md:pb-8 transition-all duration-300">
-                  {children}
-                </main>
-              </div>
-              <Toaster />
-            </TransactionProvider>
-          </CurrencyProvider>
-        </RoleProvider>
-      </AuthProvider>
-    </NotificationProvider>
+    <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false}>
+      <NotificationProvider>
+        <AuthProvider>
+          <RoleProvider>
+            <CurrencyProvider>
+              <TransactionProvider>
+                {isLandingPage ? (
+                  <div className="min-h-screen grid-bg-pattern font-sans antialiased text-[#0c0d0e] dark:text-white">
+                    <ProtectedRoute>{children}</ProtectedRoute>
+                  </div>
+                ) : (
+                  <div className="min-h-screen grid-bg-pattern font-sans antialiased text-[#0c0d0e] dark:text-white">
+                    <Navigation />
+                    <main className="md:pl-28 pt-24 pr-4 md:pr-8 pb-24 md:pb-8 transition-all duration-300">
+                      <ProtectedRoute>{children}</ProtectedRoute>
+                    </main>
+                  </div>
+                )}
+                <Toaster />
+              </TransactionProvider>
+            </CurrencyProvider>
+          </RoleProvider>
+        </AuthProvider>
+      </NotificationProvider>
+    </ThemeProvider>
   );
 }

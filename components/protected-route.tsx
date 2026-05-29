@@ -14,7 +14,7 @@ export function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { currentRole, loading: roleLoading } = useRole()
   const router = useRouter()
   const pathname = usePathname()
-  const isPublicPath = publicPaths.some((path) => pathname.startsWith(path))
+  const isPublicPath = pathname === "/" || publicPaths.some((path) => pathname.startsWith(path))
 
   useEffect(() => {
     if (loading || roleLoading) {

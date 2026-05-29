@@ -38,6 +38,10 @@
     --ring: 76 95% 55%;                 /* Focus ring in lime */
 
     --radius: 1.5rem;                   /* Premium large border radius (24px) for cards */
+
+    /* Grid background colors */
+    --grid-bg: #eff1e9;
+    --grid-line: rgba(0, 0, 0, 0.035);
   }
 
   /* Dark mode overrides (disabled for absolute light theme mockup matching) */
@@ -59,6 +63,10 @@
     --border: 75 12% 86%;
     --input: 75 12% 86%;
     --ring: 76 95% 55%;
+
+    /* Grid background colors (dark theme) */
+    --grid-bg: #050505;
+    --grid-line: rgba(255, 255, 255, 0.06);
   }
 
   * {
@@ -66,10 +74,10 @@
   }
 
   body {
-    background-color: #eff1e9;
-    background-image: 
-      linear-gradient(rgba(0, 0, 0, 0.035) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(0, 0, 0, 0.035) 1px, transparent 1px);
+    background-color: var(--grid-bg);
+    background-image:
+      linear-gradient(var(--grid-line) 1px, transparent 1px),
+      linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
     background-size: 24px 24px;
     background-attachment: fixed;
     color: #0c0d0e;
@@ -83,10 +91,10 @@
 
 /* Main layout grid pattern background */
 .grid-bg-pattern {
-  background-color: #eff1e9;
-  background-image: 
-    linear-gradient(rgba(0, 0, 0, 0.035) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(0, 0, 0, 0.035) 1px, transparent 1px);
+  background-color: var(--grid-bg);
+  background-image:
+    linear-gradient(var(--grid-line) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
   background-size: 24px 24px;
   background-attachment: fixed;
 }
