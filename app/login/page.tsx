@@ -1,95 +1,114 @@
-"use client"
+"use client";
 
-import type React from "react"
+import type React from "react";
 
-import { useState } from "react"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { useAuth } from "@/contexts/auth-context"
-import { useRouter } from "next/navigation"
-import { Loader2 } from "lucide-react"
-import Image from "next/image"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
-import { motion } from "framer-motion"
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { useAuth } from "@/contexts/auth-context";
+import { useRouter } from "next/navigation";
+import { Loader2 } from "lucide-react";
+import Image from "next/image";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { motion } from "framer-motion";
 
 export default function LoginPage() {
-  const [email, setEmail] = useState("")
-  const [password, setPassword] = useState("")
-  const [name, setName] = useState("")
-  const [loading, setLoading] = useState(false)
-  const [googleLoading, setGoogleLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const [signupSuccessMessage, setSignupSuccessMessage] = useState<string | null>(null)
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [name, setName] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [signupSuccessMessage, setSignupSuccessMessage] = useState<
+    string | null
+  >(null);
 
-  const { login, loginWithGoogle, signup } = useAuth()
-  const router = useRouter()
+  const { login, loginWithGoogle, signup } = useAuth();
+  const router = useRouter();
 
   const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setLoading(true)
-    setError(null)
-    setSignupSuccessMessage(null)
+    e.preventDefault();
+    setLoading(true);
+    setError(null);
+    setSignupSuccessMessage(null);
     try {
-      await login(email, password)
-      router.push("/dashboard")
+      await login(email, password);
+      router.push("/dashboard");
     } catch (err: any) {
       // Set a more descriptive error message
-      setError(err.message || "Failed to log in. Please check your email and password and try again.")
-      console.error("Login error details:", err)
+      setError(
+        err.message ||
+          "Failed to log in. Please check your email and password and try again.",
+      );
+      console.error("Login error details:", err);
       // Log the specific error information for debugging
       if (err.code) {
-        console.error(`Firebase error code: ${err.code}`)
+        console.error(`Firebase error code: ${err.code}`);
       }
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   const handleGoogleLogin = async () => {
-    setGoogleLoading(true)
-    setError(null)
-    setSignupSuccessMessage(null)
+    setGoogleLoading(true);
+    setError(null);
+    setSignupSuccessMessage(null);
     try {
-      await loginWithGoogle()
-      router.push("/dashboard")
+      await loginWithGoogle();
+      router.push("/dashboard");
     } catch (err: any) {
-      setError(err.message || "Failed to log in with Google. Please try again.")
+      setError(
+        err.message || "Failed to log in with Google. Please try again.",
+      );
     } finally {
-      setGoogleLoading(false)
+      setGoogleLoading(false);
     }
-  }
+  };
 
   const handleSignup = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setLoading(true)
-    setError(null)
-    setSignupSuccessMessage(null)
+    e.preventDefault();
+    setLoading(true);
+    setError(null);
+    setSignupSuccessMessage(null);
     try {
-      const result = await signup(email, password, name)
+      const result = await signup(email, password, name);
       if (result.error) {
-        setError(result.error)
+        setError(result.error);
       } else {
-        setSignupSuccessMessage(result.message ?? null)
-        setEmail("")
-        setPassword("")
-        setName("")
+        router.push("/dashboard");
       }
     } catch (err: any) {
-      setError(err.message || "Failed to sign up. Please try again.")
+      setError(err.message || "Failed to sign up. Please try again.");
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   return (
     <div className="flex items-center justify-center min-h-screen grid-bg-pattern px-4 py-8 font-sans text-black antialiased">
-      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }} className="w-full">
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+        className="w-full"
+      >
         <Card className="w-full max-w-md md:max-w-lg mx-auto bg-white border border-black/5 rounded-[2.5rem] shadow-2xl p-6 md:p-8 relative overflow-hidden">
           <CardHeader className="text-center p-0 mb-5 md:mb-6">
-            <motion.div initial={{ scale: 0.8 }} animate={{ scale: 1 }} transition={{ delay: 0.2, duration: 0.3 }}>
+            <motion.div
+              initial={{ scale: 0.8 }}
+              animate={{ scale: 1 }}
+              transition={{ delay: 0.2, duration: 0.3 }}
+            >
               <Image
                 src="/expense_tracker_logo.png"
                 alt="CtrlFund Logo"
@@ -99,7 +118,9 @@ export default function LoginPage() {
                 priority
               />
             </motion.div>
-            <CardTitle className="text-2xl md:text-3xl font-black text-black tracking-tight">Welcome to CtrlFund</CardTitle>
+            <CardTitle className="text-2xl md:text-3xl font-black text-black tracking-tight">
+              Welcome to CtrlFund
+            </CardTitle>
             <CardDescription className="text-xs text-black/60 font-semibold mt-1">
               Manage your team's expenses and notes efficiently.
             </CardDescription>
@@ -123,7 +144,10 @@ export default function LoginPage() {
               <TabsContent value="login" className="mt-0">
                 <form onSubmit={handleLogin} className="space-y-4">
                   <div>
-                    <Label htmlFor="login-email" className="text-black/75 font-semibold text-xs">
+                    <Label
+                      htmlFor="login-email"
+                      className="text-black/75 font-semibold text-xs"
+                    >
                       Email
                     </Label>
                     <Input
@@ -137,7 +161,10 @@ export default function LoginPage() {
                     />
                   </div>
                   <div>
-                    <Label htmlFor="login-password" className="text-black/75 font-semibold text-xs">
+                    <Label
+                      htmlFor="login-password"
+                      className="text-black/75 font-semibold text-xs"
+                    >
                       Password
                     </Label>
                     <Input
@@ -156,10 +183,17 @@ export default function LoginPage() {
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ duration: 0.3 }}
                     >
-                      <Alert variant="destructive" className="bg-red-50 border-red-200 text-red-700 rounded-[1.5rem] p-4 shadow-sm">
-                        <AlertTitle className="font-bold text-red-800">Authentication Error</AlertTitle>
+                      <Alert
+                        variant="destructive"
+                        className="bg-red-50 border-red-200 text-red-700 rounded-[1.5rem] p-4 shadow-sm"
+                      >
+                        <AlertTitle className="font-bold text-red-800">
+                          Authentication Error
+                        </AlertTitle>
                         <AlertDescription className="text-xs mt-1">
-                          <div className="font-semibold text-red-700/90 mb-2">{error}</div>
+                          <div className="font-semibold text-red-700/90 mb-2">
+                            {error}
+                          </div>
                           <div className="mt-2 text-xs border-t border-red-200/50 pt-2 text-red-700/80">
                             <p className="font-bold">Troubleshooting:</p>
                             <ul className="list-disc pl-4 mt-1 space-y-1 font-medium">
@@ -172,10 +206,15 @@ export default function LoginPage() {
                       </Alert>
                     </motion.div>
                   )}
-                  <Button type="submit" className="w-full button-gradient h-11 text-xs font-semibold rounded-xl" disabled={loading || googleLoading}>
+                  <Button
+                    type="submit"
+                    className="w-full button-gradient h-11 text-xs font-semibold rounded-xl"
+                    disabled={loading || googleLoading}
+                  >
                     {loading ? (
                       <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin text-[#ccff00]" /> Logging In...
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin text-[#ccff00]" />{" "}
+                        Logging In...
                       </>
                     ) : (
                       "Login"
@@ -187,7 +226,9 @@ export default function LoginPage() {
                       <span className="w-full border-t border-black/5" />
                     </div>
                     <div className="relative flex justify-center text-xs uppercase">
-                      <span className="bg-white px-3 text-black/40 font-semibold text-[10px] tracking-wider">Or continue with</span>
+                      <span className="bg-white px-3 text-black/40 font-semibold text-[10px] tracking-wider">
+                        Or continue with
+                      </span>
                     </div>
                   </div>
 
@@ -200,11 +241,15 @@ export default function LoginPage() {
                   >
                     {googleLoading ? (
                       <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin text-black" /> Signing in with Google...
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin text-black" />{" "}
+                        Signing in with Google...
                       </>
                     ) : (
                       <>
-                        <svg className="mr-2 h-4 w-4 text-black" viewBox="0 0 24 24">
+                        <svg
+                          className="mr-2 h-4 w-4 text-black"
+                          viewBox="0 0 24 24"
+                        >
                           <path
                             fill="currentColor"
                             d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
@@ -231,7 +276,10 @@ export default function LoginPage() {
               <TabsContent value="signup" className="mt-0">
                 <form onSubmit={handleSignup} className="space-y-4">
                   <div>
-                    <Label htmlFor="signup-name" className="text-black/75 font-semibold text-xs">
+                    <Label
+                      htmlFor="signup-name"
+                      className="text-black/75 font-semibold text-xs"
+                    >
                       Full Name
                     </Label>
                     <Input
@@ -245,7 +293,10 @@ export default function LoginPage() {
                     />
                   </div>
                   <div>
-                    <Label htmlFor="signup-email" className="text-black/75 font-semibold text-xs">
+                    <Label
+                      htmlFor="signup-email"
+                      className="text-black/75 font-semibold text-xs"
+                    >
                       Email
                     </Label>
                     <Input
@@ -259,7 +310,10 @@ export default function LoginPage() {
                     />
                   </div>
                   <div>
-                    <Label htmlFor="signup-password" className="text-black/75 font-semibold text-xs">
+                    <Label
+                      htmlFor="signup-password"
+                      className="text-black/75 font-semibold text-xs"
+                    >
                       Password
                     </Label>
                     <Input
@@ -273,21 +327,33 @@ export default function LoginPage() {
                     />
                   </div>
                   {error && (
-                    <Alert variant="destructive" className="mb-4 bg-red-50 border-red-200 text-red-700 rounded-2xl p-4">
+                    <Alert
+                      variant="destructive"
+                      className="mb-4 bg-red-50 border-red-200 text-red-700 rounded-2xl p-4"
+                    >
                       <AlertTitle className="font-bold">Error</AlertTitle>
-                      <AlertDescription className="text-xs mt-0.5">{error}</AlertDescription>
+                      <AlertDescription className="text-xs mt-0.5">
+                        {error}
+                      </AlertDescription>
                     </Alert>
                   )}
                   {signupSuccessMessage && (
                     <Alert className="mb-4 bg-green-50 border-green-200 text-green-700 rounded-2xl p-4">
                       <AlertTitle className="font-bold">Success!</AlertTitle>
-                      <AlertDescription className="text-xs mt-0.5">{signupSuccessMessage}</AlertDescription>
+                      <AlertDescription className="text-xs mt-0.5">
+                        {signupSuccessMessage}
+                      </AlertDescription>
                     </Alert>
                   )}
-                  <Button type="submit" className="w-full button-gradient h-11 text-xs font-semibold rounded-xl" disabled={loading}>
+                  <Button
+                    type="submit"
+                    className="w-full button-gradient h-11 text-xs font-semibold rounded-xl"
+                    disabled={loading}
+                  >
                     {loading ? (
                       <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin text-[#ccff00]" /> Signing Up...
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin text-[#ccff00]" />{" "}
+                        Signing Up...
                       </>
                     ) : (
                       "Sign Up"
@@ -300,5 +366,5 @@ export default function LoginPage() {
         </Card>
       </motion.div>
     </div>
-  )
+  );
 }
