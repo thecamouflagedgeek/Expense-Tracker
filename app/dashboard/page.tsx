@@ -40,7 +40,6 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import {
   exportToExcel,
   exportToCSV,
-  exportToPDF,
   exportDashboardSummaryPDF,
 } from "@/utils/export-utils";
 
@@ -199,43 +198,46 @@ export default function DashboardPage() {
   };
 
   const handleExportPDF = () => {
-    const incomeCount = filteredTransactions.filter((t) => t.type === "income").length
-    const expenseCount = filteredTransactions.filter((t) => t.type === "expense").length
+    const incomeCount = filteredTransactions.filter(
+      (t) => t.type === "income",
+    ).length;
 
-    const dashboardMetrics = {
-      totalExpenses,
-      totalIncome,
-      averageExpense,
-      totalTransactions: filteredTransactions.length,
-      totalNotes,
-      activeUsers,
-      pendingUsers: pendingUsers.length,
-      workspaceAllocation,
-      workspaceRemaining,
-      categorySpendingData,
-      transferCount,
-      incomeCount,
-      expenseCount,
-    }
+    const expenseCount = filteredTransactions.filter(
+      (t) => t.type === "expense",
+    ).length;
 
-    exportDashboardSummaryPDF(dashboardMetrics, format, "dashboard-summary.pdf")
-  };
+    exportDashboardSummaryPDF(
+      {
+        totalExpenses,
+        totalIncome,
+        averageExpense,
 
-  if (!permissions.canViewDashboard) {
-    return (
-      <div className="flex items-center justify-center min-h-[400px] bg-[#eff1e9] text-black">
-        <div className="text-center p-8 bg-white border border-black/5 rounded-3xl shadow-xl max-w-md">
-          <h2 className="text-2xl font-black text-red-500 mb-2">
-            Access Denied
-          </h2>
-          <p className="text-black/60 text-sm">
-            You do not have permission to view the Dashboard.
-          </p>
-        </div>
-      </div>
+        totalTransactions: filteredTransactions.length,
+
+        totalNotes,
+
+        activeUsers,
+
+        pendingUsers: pendingUsers.length,
+
+        workspaceAllocation,
+
+        workspaceRemaining,
+
+        categorySpendingData,
+
+        transferCount,
+
+        incomeCount,
+
+        expenseCount,
+      },
+
+      format,
+
+      "dashboard-summary.pdf",
     );
-  }
-
+  };
   const isAdminView = currentRole === "owner";
 
   const handleSupportAction = (label: string) => {

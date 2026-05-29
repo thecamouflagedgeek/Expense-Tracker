@@ -7,6 +7,14 @@ type ExportButtonProps = {
   onExport: () => void
 }
 
+const categoriesToShow = [
+  "Transfer",
+  "Food",
+  "Shopping",
+  "Bills",
+]
+
+
 export function ExportButton({ onExport }: ExportButtonProps) {
   return (
     <Button
