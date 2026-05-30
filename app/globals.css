@@ -91,12 +91,19 @@
 
 /* Main layout grid pattern background */
 .grid-bg-pattern {
-  background-color: var(--grid-bg);
-  background-image:
-    linear-gradient(var(--grid-line) 1px, transparent 1px),
-    linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
+  background-color: #eff1e9;
+  background-image: 
+    linear-gradient(rgba(0, 0, 0, 0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 0, 0, 0.035) 1px, transparent 1px);
   background-size: 24px 24px;
   background-attachment: fixed;
+}
+
+.dark .grid-bg-pattern {
+  background-color: #050505;
+  background-image: 
+    linear-gradient(rgba(255, 255, 255, 0.018) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.018) 1px, transparent 1px);
 }
 
 /* Premium Solid Black Button with Lime Glow hover */
@@ -291,4 +298,9 @@ animation:marquee 18s linear infinite;
 
 width:max-content;
 
+}
+
+.pixelated {
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
 }

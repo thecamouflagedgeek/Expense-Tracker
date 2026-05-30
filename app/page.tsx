@@ -60,8 +60,55 @@ const detailedFeatures: DetailFeature[] = [
   },
 ];
 
+interface TeamMember {
+  id: "deon" | "hazel";
+  name: string;
+  role: string;
+  image: string;
+  gif: string;
+  bio: string;
+  tags: string[];
+  socials: {
+    github: string;
+    linkedin: string;
+    twitter: string;
+  };
+}
+
+const teamMembers: TeamMember[] = [
+  {
+    id: "deon",
+    name: "Deon",
+    role: "Product + Frontend",
+    image: "/deon1.png",
+    gif: "/deon4.gif",
+    bio: "Crafting modern, beautiful, and interactive user interfaces for CtrlFund. Passionate about clean code, high-performance animations, and pixel-perfect design systems.",
+    tags: ["UI", "Exports", "Frontend", "Motion"],
+    socials: {
+      github: "https://github.com/deonraj",
+      linkedin: "https://linkedin.com",
+      twitter: "https://twitter.com"
+    }
+  },
+  {
+    id: "hazel",
+    name: "Hazel",
+    role: "Backend + Data",
+    image: "/hazel_image.jpeg",
+    gif: "/hazel1.gif",
+    bio: "Architecting secure, robust, and highly scalable data endpoints and storage systems. Specializing in secure user authentication, optimized databases, and seamless backups.",
+    tags: ["Auth", "Storage", "Backend", "Database"],
+    socials: {
+      github: "https://github.com",
+      linkedin: "https://linkedin.com",
+      twitter: "https://twitter.com"
+    }
+  }
+];
+
 export default function LandingPage() {
   const [activeFeature, setActiveFeature] = useState<FeatureKey>("transactions");
+  const [activeMember, setActiveMember] = useState<"deon" | "hazel">("deon");
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [showDemoVideo, setShowDemoVideo] = useState(false);
   const [isThemeReady, setIsThemeReady] = useState(false);
@@ -75,6 +122,14 @@ export default function LandingPage() {
     setIsThemeReady(true);
   }, []);
 
+  useEffect(() => {
+    const intervalId = window.setInterval(() => {
+      setActiveMember((prev) => (prev === "deon" ? "hazel" : "deon"));
+    }, 6000);
+
+    return () => window.clearInterval(intervalId);
+  }, []);
+
   // Scroll to Top helper
   const scrollToTop = () => {
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -86,6 +141,26 @@ export default function LandingPage() {
     setTheme(nextTheme);
   };
 
+  const deonGifSettings = {
+    width: "900px",
+    height: "100%",
+    opacityLight: 0.85,
+    opacityDark: 0.58,
+    radialLight: "radial-gradient(circle, transparent 45%, #eff1e9 85%)",
+    radialDark: "radial-gradient(circle, transparent 35%, #050505 80%)",
+  };
+
+  const hazelGifSettings = {
+    width: "800px",
+    height: "100%",
+    opacityLight: 0.85,
+    opacityDark: 0.58,
+    radialLight: "radial-gradient(circle, transparent 45%, #eff1e9 85%)",
+    radialDark: "radial-gradient(circle, transparent 35%, #050505 80%)",
+  };
+
+  const activeGifSettings = activeMember === "deon" ? deonGifSettings : hazelGifSettings;
+
   return (
     <div className="min-h-screen grid-bg-pattern text-[#0c0d0e] dark:text-white selection:bg-[#ccff00] selection:text-black font-sans relative overflow-x-hidden">
       {/* BACKGROUND GLOWS */}
@@ -94,7 +169,7 @@ export default function LandingPage() {
       <div className="absolute bottom-10 left-10 w-[500px] h-[500px] bg-[#ccff00]/4 rounded-full blur-[140px] pointer-events-none" />
 
       {/* HEADER / NAVIGATION */}
-      <header className="fixed top-0 left-0 right-0 z-50 bg-[#eff1e9]/90 dark:bg-[#050505]/80 backdrop-blur-xl border-b border-black/5 dark:border-white/5 px-6 md:px-12 py-5 transition-all duration-300">
+      <header className="fixed top-0 left-0 right-0 z-50 bg-white/25 dark:bg-[#050505]/45 backdrop-blur-2xl border-b border-black/5 dark:border-white/5 shadow-sm px-6 md:px-12 py-5 transition-all duration-300">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           {/* Logo */}
           <Link href="/" className="flex items-center gap-3 group">
@@ -345,7 +420,7 @@ export default function LandingPage() {
               >
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-xl bg-[#ccff00]/10 flex items-center justify-center relative">
-                    <PiggyBank className="w-5.5 h-5.5 text-[#ccff00]" />
+                    <PiggyBank className="w-5.5 h-5.5 text-[#82a400] dark:text-[#ccff00]" />
                     <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-[#ccff00] animate-ping" />
                     <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-[#ccff00]" />
                   </div>
@@ -355,7 +430,7 @@ export default function LandingPage() {
                   </div>
                 </div>
                 <div className="text-right">
-                  <span className="text-sm font-black text-[#ccff00]">+Rs. 1,400</span>
+                  <span className="text-sm font-black text-[#82a400] dark:text-[#ccff00]">+Rs. 1,400</span>
                 </div>
               </motion.div>
 
@@ -368,7 +443,7 @@ export default function LandingPage() {
       {/* CORE FEATURES GRID - "Spend Smarter, Not Less" */}
       <section id="features" className="max-w-7xl mx-auto px-6 md:px-12 py-24 md:py-32 scroll-mt-20">
         <div className="text-center max-w-3xl mx-auto mb-16 md:mb-24">
-          <p className="text-[11px] uppercase font-bold tracking-[0.3em] text-[#ccff00] mb-4">
+          <p className="text-[11px] uppercase font-bold tracking-[0.3em] text-[#82a400] dark:text-[#ccff00] mb-4">
             Features
           </p>
           <h2 className="text-3xl md:text-5xl font-black text-[#0c0d0e] dark:text-white tracking-tight leading-tight">
@@ -614,7 +689,7 @@ export default function LandingPage() {
                 {/* Micro chart */}
                 <div className="pt-2 flex justify-between items-center text-xs border-t border-black/5 dark:border-white/5">
                   <span className="text-black/40 dark:text-white/40 font-bold">Export formats</span>
-                  <span className="text-[#ccff00] font-black">CSV · Excel · PDF</span>
+                  <span className="text-[#82a400] dark:text-[#ccff00] font-black">CSV · Excel · PDF</span>
                 </div>
 
               </div>
@@ -622,7 +697,7 @@ export default function LandingPage() {
 
             {/* Right text panel */}
             <div className="lg:col-span-7 space-y-6 order-1 lg:order-2">
-              <p className="text-[11px] uppercase font-bold tracking-[0.3em] text-[#ccff00]">
+              <p className="text-[11px] uppercase font-bold tracking-[0.3em] text-[#82a400] dark:text-[#ccff00]">
                 Methodology
               </p>
               <h2 className="text-3xl md:text-5xl font-black text-[#0c0d0e] dark:text-white tracking-tight leading-tight">
@@ -633,11 +708,11 @@ export default function LandingPage() {
                 Role-based access keeps workspaces clean and organized without extra complexity.
               </p>
               <div className="pt-4 grid grid-cols-2 gap-6">
-                <div className="space-y-1 border-l-2 border-[#ccff00] pl-4">
+                <div className="space-y-1 border-l-2 border-[#82a400] dark:border-[#ccff00] pl-4">
                   <h3 className="text-3xl font-black text-[#0c0d0e] dark:text-white">19</h3>
                   <p className="text-[11px] text-black/40 dark:text-white/40 font-bold uppercase tracking-wider">Currencies supported</p>
                 </div>
-                <div className="space-y-1 border-l-2 border-[#ccff00] pl-4">
+                <div className="space-y-1 border-l-2 border-[#82a400] dark:border-[#ccff00] pl-4">
                   <h3 className="text-3xl font-black text-[#0c0d0e] dark:text-white">3</h3>
                   <p className="text-[11px] text-black/40 dark:text-white/40 font-bold uppercase tracking-wider">Export formats</p>
                 </div>
@@ -651,7 +726,7 @@ export default function LandingPage() {
       {/* HOW IT WORKS / 3 STEPS SECTION */}
       <section id="how-it-works" className="max-w-7xl mx-auto px-6 md:px-12 py-24 md:py-32 scroll-mt-20">
         <div className="text-center max-w-2xl mx-auto mb-20 md:mb-28">
-          <p className="text-[11px] uppercase font-bold tracking-[0.3em] text-[#ccff00] mb-4">
+          <p className="text-[11px] uppercase font-bold tracking-[0.3em] text-[#82a400] dark:text-[#ccff00] mb-4">
             Setup Process
           </p>
           <h2 className="text-3xl md:text-5xl font-black text-[#0c0d0e] dark:text-white tracking-tight leading-tight">
@@ -741,7 +816,7 @@ export default function LandingPage() {
         <div className="max-w-7xl mx-auto px-6 md:px-12">
 
           <div className="mb-16">
-            <p className="text-[11px] uppercase font-bold tracking-[0.3em] text-[#ccff00] mb-4">
+            <p className="text-[11px] uppercase font-bold tracking-[0.3em] text-[#82a400] dark:text-[#ccff00] mb-4">
               Workspace Tools
             </p>
             <h2 className="text-3xl md:text-5xl font-black text-[#0c0d0e] dark:text-white tracking-tight">
@@ -764,7 +839,7 @@ export default function LandingPage() {
                       : "bg-transparent border-transparent opacity-60 hover:opacity-85"
                       }`}
                   >
-                    <h3 className={`text-lg font-bold transition-colors ${isActive ? "text-[#ccff00]" : "text-black dark:text-white"}`}>
+                    <h3 className={`text-lg font-bold transition-colors ${isActive ? "text-[#82a400] dark:text-[#ccff00]" : "text-black dark:text-white"}`}>
                       {feat.title}
                     </h3>
                     <p className="text-xs text-black/60 dark:text-white/60 font-semibold mt-2 leading-relaxed">
@@ -790,7 +865,7 @@ export default function LandingPage() {
                 >
                   {/* Detailed Description */}
                   <div>
-                    <span className="text-[9px] uppercase font-bold tracking-wider text-[#ccff00] bg-[#ccff00]/10 px-3 py-1.5 rounded-full">
+                    <span className="text-[9px] uppercase font-bold tracking-wider text-[#82a400] dark:text-[#ccff00] bg-[#82a400]/10 dark:bg-[#ccff00]/10 px-3 py-1.5 rounded-full">
                       {detailedFeatures.find(f => f.id === activeFeature)?.title} Module
                     </span>
                     <p className="text-black/60 dark:text-white/60 text-sm font-semibold leading-relaxed mt-4">
@@ -807,7 +882,7 @@ export default function LandingPage() {
                             <h4 className="text-xs font-black text-[#0c0d0e] dark:text-white">Recent Transactions</h4>
                             <p className="text-[10px] text-black/40 dark:text-white/40 font-semibold mt-0.5">Income and expense entries</p>
                           </div>
-                          <span className="text-[10px] font-bold text-[#ccff00] bg-[#ccff00]/10 px-2 py-0.5 rounded">
+                          <span className="text-[10px] font-bold text-[#82a400] dark:text-[#ccff00] bg-[#82a400]/10 dark:bg-[#ccff00]/10 px-2 py-0.5 rounded">
                             Active View
                           </span>
                         </div>
@@ -902,6 +977,298 @@ export default function LandingPage() {
             </div>
 
           </div>
+        </div>
+      </section>
+
+      {/* ABOUT US */}
+      <section id="about" className="border-t border-black/5 dark:border-white/5 py-24 md:py-32 relative overflow-hidden bg-[#eff1e9] dark:bg-[#050505] transition-colors duration-300">
+
+        {/* Ambient background glows for dark mode to make the sides blend beautifully */}
+        {resolvedTheme === "dark" && (
+          <>
+            <div className="absolute top-1/4 -left-36 w-96 h-96 bg-[#ccff00]/5 rounded-full blur-[120px] pointer-events-none" />
+            <div className="absolute bottom-1/4 -right-36 w-96 h-96 bg-[#ccff00]/5 rounded-full blur-[120px] pointer-events-none" />
+          </>
+        )}
+
+        {/* ========================================================================= */}
+        {/* CUSTOMIZATION GUIDE FOR USER (DEON):                                      */}
+        {/*                                                                           */}
+        {/* 1. GIF OPACITY: Adjust the "opacity" value in the style tag of the        */}
+        {/*    background <img> below. Current: 0.85 in light, 0.58 in dark.          */}
+        {/* 2. RADIAL BACKGROUND FADE: Change the percentages in the background       */}
+        {/*    radial-gradient overlay. A higher transparent percentage lets more    */}
+        {/*    of the center play clearly.                                            */}
+        {/* 3. CARD SIZE: Modify the "max-w-[580px]" or padding in the card container.  */}
+        {/* ========================================================================= */}
+
+        {/* Dynamic Background GIF Layer (Full Color, NO Grayscale, High Visibility) */}
+        {teamMembers.map((member) => (
+          activeMember === member.id && (
+            <motion.div
+              key={`bg-gif-${member.id}`}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.8 }}
+              className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 select-none pointer-events-none z-0"
+              style={{
+                width: activeGifSettings.width,
+                height: activeGifSettings.height,
+              }}
+            >
+              <img
+                src={member.gif}
+                alt={`${member.name} background GIF`}
+                className="w-full h-full object-cover"
+                style={{
+                  /* LINE FOR CUSTOMIZATION: Set GIF opacity here */
+                  opacity: resolvedTheme === "dark" ? activeGifSettings.opacityDark : activeGifSettings.opacityLight,
+                  /* Dim GIF brightness in dark mode to soften the white spotlight contrast */
+                  filter: resolvedTheme === "dark" ? "brightness(0.62) contrast(1.18)" : "none",
+                }}
+              />
+              {/* Radial gradient mask overlay to fade the edges into background colors */}
+              <div
+                className="absolute inset-0 bg-gradient-radial pointer-events-none"
+                style={{
+                  /* LINE FOR CUSTOMIZATION: Adjust radial gradient fade pattern here */
+                  background: resolvedTheme === "dark"
+                    ? activeGifSettings.radialDark
+                    : activeGifSettings.radialLight
+                }}
+              />
+            </motion.div>
+          )
+        ))}
+
+        {/* Giant background outline name text - Infinite Scrolling Marquee */}
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={`outline-name-${activeMember}`}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.4 }}
+            className="absolute inset-0 flex items-center pointer-events-none select-none overflow-hidden z-0"
+          >
+            <div className="flex w-[200%] whitespace-nowrap">
+              {/* We run two identical tracks side-by-side to make the scrolling loop seamless */}
+              {[1, 2].map((trackIdx) => (
+                <motion.div
+                  key={`track-${trackIdx}`}
+                  animate={{ x: ["-100%", "0%"] }}
+                  transition={{
+                    ease: "linear",
+                    duration: 16,
+                    repeat: Infinity,
+                  }}
+                  className="flex justify-around min-w-full shrink-0"
+                >
+                  {Array(5)
+                    .fill(activeMember)
+                    .map((name, i) => (
+                      <span
+                        key={i}
+                        className="font-black tracking-[0.1em] leading-none text-transparent uppercase select-none opacity-25 dark:opacity-30 px-6"
+                        style={{
+                          fontSize: "clamp(5rem, 12vw, 11rem)",
+                          WebkitTextStroke:
+                            resolvedTheme === "dark"
+                              ? "2px rgba(204, 255, 0, 0.38)"
+                              : "2px rgba(0, 0, 0, 0.35)",
+                        }}
+                      >
+                        {name}
+                      </span>
+                    ))}
+                </motion.div>
+              ))}
+            </div>
+          </motion.div>
+        </AnimatePresence>
+
+        <div className="max-w-7xl mx-auto px-6 md:px-12 relative z-10 flex flex-col items-center">
+
+          {/* Section Heading */}
+          <div className="text-center max-w-3xl mx-auto mb-16">
+            <p className="text-[11px] uppercase font-bold tracking-[0.3em] text-[#82a400] dark:text-[#ccff00] mb-4">
+              About Us
+            </p>
+            <h2 className="text-3xl md:text-5xl font-black text-[#0c0d0e] dark:text-white tracking-tight">
+              The people behind CtrlFund.
+            </h2>
+            <p className="mt-6 text-black/60 dark:text-white/60 text-base font-semibold leading-relaxed">
+              We built this to keep expense tracking fast, tidy, and export-ready, without adding clutter.
+            </p>
+          </div>
+
+          {/* Active Member Showcase Foreground Card */}
+          <div className="w-full flex justify-center mb-16">
+            <AnimatePresence mode="wait">
+              {teamMembers.map((member) => (
+                activeMember === member.id && (
+                  <motion.div
+                    key={`card-${member.id}`}
+                    initial={{ opacity: 0, y: 30 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -30 }}
+                    transition={{ duration: 0.5, cubicBezier: [0.16, 1, 0.3, 1] }}
+                    className="w-full max-w-[580px] bg-white/20 dark:bg-black/25 border border-white/55 dark:border-white/10 rounded-[32px] overflow-hidden shadow-2xl backdrop-blur-2xl p-6 md:p-8 flex flex-col md:flex-row items-center gap-6 md:gap-8 hover:border-[#82a400]/30 dark:hover:border-[#ccff00]/30 transition-all duration-300 group"
+                  >
+
+                    {/* Square Image container with subtle green indicator dot */}
+                    <div className="relative w-44 h-44 md:w-48 md:h-48 rounded-2xl overflow-hidden flex-shrink-0 border border-white/60 dark:border-white/15 shadow-md">
+                      <img
+                        src={member.image}
+                        alt={`${member.name} profile image`}
+                        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                      />
+                      <span className="absolute top-3 right-3 w-3 h-3 rounded-full bg-[#82a400] dark:bg-[#ccff00] animate-pulse shadow-[0_0_8px_#ccff00]" />
+                    </div>
+
+                    {/* Member Detailed Info */}
+                    <div className="flex flex-col flex-1 text-center md:text-left space-y-4">
+                      <div>
+                        <div className="flex flex-col md:flex-row md:items-baseline gap-1.5 md:gap-3 justify-center md:justify-start">
+                          <h3 className="text-2xl font-black tracking-tight text-[#0c0d0e] dark:text-white leading-none">
+                            {member.name}
+                          </h3>
+                          <span className="text-xs text-[#82a400] dark:text-[#ccff00] font-black uppercase tracking-widest">
+                            {member.role}
+                          </span>
+                        </div>
+                      </div>
+
+                      <p className="text-xs text-black/70 dark:text-white/70 font-semibold leading-relaxed">
+                        {member.bio}
+                      </p>
+
+                      {/* Tag list pills matching about_us_filled.html style */}
+                      <div className="flex flex-wrap justify-center md:justify-start gap-2">
+                        {member.tags.map((tag, idx) => (
+                          <span
+                            key={idx}
+                            className="text-[10px] font-bold px-3 py-1 bg-black/5 dark:bg-white/10 text-black/60 dark:text-white/80 rounded-full border border-black/5 dark:border-white/5 uppercase"
+                          >
+                            {tag}
+                          </span>
+                        ))}
+                      </div>
+
+                      {/* Social Media Links */}
+                      <div className="flex items-center justify-center md:justify-start gap-4 pt-2">
+                        <a
+                          href={member.socials.github}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-black/50 dark:text-white/50 hover:text-[#82a400] dark:hover:text-[#ccff00] transition-colors"
+                        >
+                          <svg className="w-5 h-5 fill-current" viewBox="0 0 24 24">
+                            <path fillRule="evenodd" clipRule="evenodd" d="M12 2C6.477 2 2 6.477 2 12c0 4.42 2.87 8.17 6.84 9.5.5.08.66-.23.66-.5v-1.69c-2.77.6-3.36-1.34-3.36-1.34-.46-1.16-1.11-1.47-1.11-1.47-.9-.62.07-.6.07-.6 1 .07 1.53 1.03 1.53 1.03.9 1.52 2.34 1.07 2.91.83.09-.65.35-1.09.63-1.34-2.22-.25-4.55-1.11-4.55-4.92 0-1.11.38-2 1.03-2.71-.1-.25-.45-1.29.1-2.64 0 0 .84-.27 2.75 1.02.79-.22 1.65-.33 2.5-.33.85 0 1.71.11 2.5.33 1.91-1.29 2.75-1.02 2.75-1.02.55 1.35.2 2.39.1 2.64.65.71 1.03 1.6 1.03 2.71 0 3.82-2.34 4.66-4.57 4.91.36.31.69.92.69 1.85V21c0 .27.16.59.67.5C19.14 20.16 22 16.42 22 12A10 10 0 0012 2z" />
+                          </svg>
+                        </a>
+                        <a
+                          href={member.socials.linkedin}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-black/50 dark:text-white/50 hover:text-[#82a400] dark:hover:text-[#ccff00] transition-colors"
+                        >
+                          <svg className="w-5 h-5 fill-current" viewBox="0 0 24 24">
+                            <path fillRule="evenodd" clipRule="evenodd" d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z" />
+                          </svg>
+                        </a>
+                        <a
+                          href={member.socials.twitter}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-black/50 dark:text-white/50 hover:text-[#82a400] dark:hover:text-[#ccff00] transition-colors"
+                        >
+                          <svg className="w-5 h-5 fill-current" viewBox="0 0 24 24">
+                            <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+                          </svg>
+                        </a>
+                      </div>
+
+                    </div>
+
+                  </motion.div>
+                )
+              ))}
+            </AnimatePresence>
+          </div>
+
+          {/* Circular Avatars connected by Dotted Wave SVG Line */}
+          <div className="relative w-full max-w-[320px] h-24 flex items-center justify-between mt-4">
+
+            {/* Elegant Dotted Connector Wave SVG */}
+            <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 h-8 pointer-events-none z-0">
+              <svg className="w-full h-full overflow-visible" viewBox="0 0 320 32" fill="none">
+                <path
+                  d="M 40 16 C 100 0, 220 32, 280 16"
+                  stroke={resolvedTheme === "dark"
+                    ? "rgba(204, 255, 0, 0.45)"
+                    : "rgba(130, 164, 0, 0.35)"
+                  }
+                  strokeWidth="2.5"
+                  strokeDasharray="6 6"
+                  fill="none"
+                  style={{
+                    transition: "stroke 1s ease, filter 1s ease",
+                    filter: resolvedTheme === "dark"
+                      ? "drop-shadow(0 0 10px rgba(204, 255, 0, 0.55))"
+                      : "drop-shadow(0 0 8px rgba(130, 164, 0, 0.45))",
+                  }}
+                />
+              </svg>
+            </div>
+
+            {/* Circular Avatar 1: Deon */}
+            <button
+              onClick={() => setActiveMember("deon")}
+              className="relative group z-10 flex flex-col items-center focus:outline-none"
+            >
+              <div
+                className={`w-16 h-16 rounded-full overflow-hidden border-2 transition-all duration-300 shadow-md ${activeMember === "deon"
+                  ? "border-[#82a400] dark:border-[#ccff00] scale-110 shadow-[0_0_15px_rgba(204,255,0,0.4)]"
+                  : "border-black/10 dark:border-white/10 opacity-60 hover:opacity-100 hover:scale-105"
+                  }`}
+              >
+                <img
+                  src="/deon1.png"
+                  alt="Deon avatar circle icon"
+                  className="w-full h-full object-cover"
+                />
+              </div>
+              <span className={`text-[10px] font-black tracking-widest mt-2 uppercase ${activeMember === "deon" ? "text-[#82a400] dark:text-[#ccff00]" : "text-black/40 dark:text-white/40"}`}>
+                DEON
+              </span>
+            </button>
+
+            {/* Circular Avatar 2: Hazel */}
+            <button
+              onClick={() => setActiveMember("hazel")}
+              className="relative group z-10 flex flex-col items-center focus:outline-none"
+            >
+              <div
+                className={`w-16 h-16 rounded-full overflow-hidden border-2 transition-all duration-300 shadow-md ${activeMember === "hazel"
+                  ? "border-[#82a400] dark:border-[#ccff00] scale-110 shadow-[0_0_15px_rgba(204,255,0,0.4)]"
+                  : "border-black/10 dark:border-white/10 opacity-60 hover:opacity-100 hover:scale-105"
+                  }`}
+              >
+                <img
+                  src="/hazel_image.jpeg"
+                  alt="Hazel avatar circle icon"
+                  className="w-full h-full object-cover"
+                />
+              </div>
+              <span className={`text-[10px] font-black tracking-widest mt-2 uppercase ${activeMember === "hazel" ? "text-[#82a400] dark:text-[#ccff00]" : "text-black/40 dark:text-white/40"}`}>
+                HAZEL
+              </span>
+            </button>
+
+          </div>
+
         </div>
       </section>
 
