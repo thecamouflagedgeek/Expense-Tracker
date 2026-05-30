@@ -11,6 +11,112 @@ import {
   ArrowUpRight,
 } from "lucide-react";
 
+function InfiniteCarousel({ items }: { items: string[] }) {
+  return (
+    <div className="relative overflow-hidden py-4">
+      {/* left fade */}
+
+      <div className="absolute left-0 top-0 bottom-0 z-10 w-24 bg-gradient-to-r from-[#f8f8f5] to-transparent" />
+
+      {/* right fade */}
+
+      <div className="absolute right-0 top-0 bottom-0 z-10 w-24 bg-gradient-to-l from-[#f8f8f5] to-transparent" />
+
+      <div className="flex w-max gap-5 animate-bank-scroll">
+        {[...items, ...items, ...items].map((item, index) => (
+          <div
+            key={index}
+            className="group flex items-center gap-3 rounded-2xl border border-black/5 bg-white/80 backdrop-blur-lg px-6 py-4 shadow-md transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:border-[#ccff00]/50"
+          >
+            <div className="h-3 w-3 rounded-full bg-[#ccff00] shadow-[0_0_15px_#ccff00]" />
+
+            <span className="font-black text-black whitespace-nowrap tracking-tight">
+              {item}
+            </span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+const banks = [
+  "HDFC",
+  "ICICI",
+  "SBI",
+  "Axis",
+  "Kotak",
+  "IDFC",
+  "Bank of Baroda",
+  "Yes Bank",
+  "Punjab National Bank",
+  "Canara Bank",
+];
+
+const schemes = [
+  {
+    name: "PM Jan Dhan Yojana",
+    desc: "Financial inclusion with zero balance accounts",
+  },
+
+  {
+    name: "PPF",
+    desc: "Long-term tax saving investment",
+  },
+
+  {
+    name: "NPS",
+    desc: "Retirement savings scheme",
+  },
+
+  {
+    name: "Sukanya Samriddhi",
+    desc: "Savings scheme for girl child",
+  },
+
+  {
+    name: "Atal Pension Yojana",
+    desc: "Pension scheme for workers",
+  },
+
+  {
+    name: "SCSS",
+    desc: "Senior citizen savings scheme",
+  },
+];
+
+const resources = [
+  {
+    name: "RBI",
+    url: "https://www.rbi.org.in",
+  },
+
+  {
+    name: "SEBI",
+    url: "https://www.sebi.gov.in",
+  },
+
+  {
+    name: "MoneyControl",
+    url: "https://www.moneycontrol.com",
+  },
+
+  {
+    name: "Economic Times Markets",
+    url: "https://economictimes.indiatimes.com/markets",
+  },
+
+  {
+    name: "Livemint",
+    url: "https://www.livemint.com",
+  },
+
+  {
+    name: "Investopedia",
+    url: "https://www.investopedia.com",
+  },
+];
+
 export default function FinancialEducationPage() {
   const sections = [
     {
@@ -109,6 +215,26 @@ export default function FinancialEducationPage() {
         </Card>
       </div>
 
+      <Card className="border-none card-gradient p-8 mb-10 overflow-hidden">
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <p className="text-xs uppercase font-black tracking-[0.2em] text-black/40">
+              Financial Ecosystem
+            </p>
+
+            <h2 className="font-black text-3xl mt-2">
+              Popular Financial Institutions
+            </h2>
+          </div>
+
+          <div className="w-12 h-12 rounded-2xl bg-black flex items-center justify-center">
+            <Wallet className="text-[#ccff00]" />
+          </div>
+        </div>
+
+        <InfiniteCarousel items={banks} />
+      </Card>
+
       {/* MAIN GRID */}
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-7">
@@ -151,6 +277,20 @@ export default function FinancialEducationPage() {
         })}
       </div>
 
+      <div className="mt-14">
+        <h2 className="text-3xl font-black mb-8">Government Schemes</h2>
+
+        <div className="grid md:grid-cols-3 gap-5">
+          {schemes.map((scheme) => (
+            <Card key={scheme.name} className="card-gradient border-none p-6">
+              <h3 className="font-black">{scheme.name}</h3>
+
+              <p className="mt-3 text-black/60">{scheme.desc}</p>
+            </Card>
+          ))}
+        </div>
+      </div>
+
       {/* WARNING SECTION */}
 
       <Card className="mt-10 bg-black border-none p-8 rounded-[28px]">
@@ -170,6 +310,39 @@ export default function FinancialEducationPage() {
               verify.
             </p>
           </div>
+        </div>
+      </Card>
+
+      <div className="mt-14">
+        <h2 className="text-3xl font-black mb-8">Financial News & Resources</h2>
+
+        <div className="grid md:grid-cols-3 gap-5">
+          {resources.map((resource) => (
+            <a
+              href={resource.url}
+              target="_blank"
+              key={resource.name}
+              className="card-gradient rounded-3xl p-6 block hover:scale-[1.02] transition"
+            >
+              <h3 className="font-black">{resource.name}</h3>
+
+              <p className="text-black/50 mt-2">Open Resource →</p>
+            </a>
+          ))}
+        </div>
+      </div>
+
+      <Card className="mt-14 bg-red-50 border-red-200 p-8">
+        <h2 className="font-black text-2xl">Scam Awareness</h2>
+
+        <div className="grid md:grid-cols-2 gap-4 mt-6">
+          <div>⚠ Fake Investment Apps</div>
+
+          <div>⚠ UPI Fraud</div>
+
+          <div>⚠ Ponzi Schemes</div>
+
+          <div>⚠ Loan App Scams</div>
         </div>
       </Card>
 

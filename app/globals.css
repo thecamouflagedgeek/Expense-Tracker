@@ -304,3 +304,58 @@ width:max-content;
   image-rendering: pixelated;
   image-rendering: crisp-edges;
 }
+
+@keyframes marquee{
+
+0%{
+
+transform:translateX(0)
+
+}
+
+100%{
+
+transform:translateX(-50%)
+
+}
+
+}
+
+.animate-marquee{
+
+animation:marquee 25s linear infinite;
+
+}
+
+.animate-marquee-reverse{
+
+animation:marquee 25s linear infinite reverse;
+
+}
+@keyframes bankScroll{
+
+0%{
+
+transform:translateX(0);
+
+}
+
+100%{
+
+transform:translateX(-33.33%);
+
+}
+
+}
+
+.animate-bank-scroll{
+
+animation:bankScroll 30s linear infinite;
+
+}
+
+.animate-bank-scroll:hover{
+
+animation-play-state:paused;
+
+}
