@@ -142,18 +142,18 @@ export default function LandingPage() {
     width: "900px",
     height: "100%",
     opacityLight: 0.85,
-    opacityDark: 0.58,
+    opacityDark: 0.65,
     radialLight: "radial-gradient(circle, transparent 45%, #eff1e9 85%)",
-    radialDark: "radial-gradient(circle, transparent 35%, #050505 80%)",
+    radialDark: "radial-gradient(circle, transparent 75%, #050505 98%)",
   };
 
   const hazelGifSettings = {
     width: "800px",
     height: "100%",
     opacityLight: 0.85,
-    opacityDark: 0.58,
+    opacityDark: 0.65,
     radialLight: "radial-gradient(circle, transparent 45%, #eff1e9 85%)",
-    radialDark: "radial-gradient(circle, transparent 35%, #050505 80%)",
+    radialDark: "radial-gradient(circle, transparent 75%, #050505 98%)",
   };
 
   const activeGifSettings = activeMember === "deon" ? deonGifSettings : hazelGifSettings;
@@ -167,7 +167,7 @@ export default function LandingPage() {
 
       {/* HEADER / NAVIGATION */}
       <header className="fixed top-[4dvw] left-4 right-4 z-50 rounded-3xl filter backdrop-filter-[url('#liquidFilter')] border border-black/10 dark:border-white/10 shadow-sm px-6 md:px-12 py-5 transition-all duration-300">
-        <div className="absolute inset-0 w-full h-full bg-black/25 -z-10 rounded-3xl" />
+        <div className="absolute inset-0 w-full h-full bg-white/25 -z-10 rounded-3xl" />
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           {/* Logo */}
           <Link href="/" className="flex items-center gap-3 group">
@@ -195,7 +195,7 @@ export default function LandingPage() {
             <a href="#tools" className="text-sm text-black/60 dark:text-white/60 hover:text-[#ccff00] font-semibold transition-colors duration-200">
               Tools
             </a>
-             <a href="#about" className="text-sm text-black/60 dark:text-white/60 hover:text-[#ccff00] font-semibold transition-colors duration-200">
+            <a href="#about" className="text-sm text-black/60 dark:text-white/60 hover:text-[#ccff00] font-semibold transition-colors duration-200">
               About us
             </a>
           </nav>
@@ -215,11 +215,6 @@ export default function LandingPage() {
             >
               {resolvedTheme === "dark" ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
             </button>
-            <Link href="/login">
-              <button className="bg-[#ccff00] text-black hover:bg-white hover:scale-105 active:scale-95 transition-all duration-200 font-bold text-xs py-3 px-6 rounded-full shadow-[0_4px_20px_rgba(204,255,0,0.25)] flex items-center gap-1">
-                Start Saving Free <ArrowRight className="w-3.5 h-3.5 stroke-[3]" />
-              </button>
-            </Link>
           </div>
 
           {/* Mobile Menu Button */}
@@ -273,6 +268,12 @@ export default function LandingPage() {
             </nav>
             <div className="h-px bg-black/5 dark:bg-white/5 my-2" />
             <div className="flex flex-col gap-3">
+              {/* Mobile-only Login Button inside the mobile navigation overlay */}
+              <Link href="/login" onClick={() => setIsMobileMenuOpen(false)}>
+                <span className="block w-full text-center bg-[#ccff00] text-black font-bold py-3 rounded-full text-sm hover:bg-white hover:shadow-[0_0_15px_rgba(204,255,0,0.4)] transition-all cursor-pointer">
+                  Log in
+                </span>
+              </Link>
               <button
                 type="button"
                 onClick={toggleTheme}
@@ -280,16 +281,6 @@ export default function LandingPage() {
               >
                 {resolvedTheme === "dark" ? "Switch to Light" : "Switch to Dark"}
               </button>
-              <Link href="/login" onClick={() => setIsMobileMenuOpen(false)}>
-                <span className="w-full text-center block border border-black/10 dark:border-white/10 hover:border-black/20 dark:hover:border-white/20 py-3 rounded-full text-sm font-bold text-black dark:text-white cursor-pointer">
-                  Log in
-                </span>
-              </Link>
-              <Link href="/login" onClick={() => setIsMobileMenuOpen(false)}>
-                <button className="w-full bg-[#ccff00] text-black font-bold text-sm py-3.5 rounded-full shadow-[0_4px_15px_rgba(204,255,0,0.2)]">
-                  Start Saving Free
-                </button>
-              </Link>
             </div>
           </motion.div>
         )}
@@ -324,7 +315,7 @@ export default function LandingPage() {
             <div className="mt-8 flex flex-col sm:flex-row gap-4 w-full sm:w-auto">
               <Link href="/login">
                 <button className="bg-[#ccff00] text-black hover:bg-white hover:shadow-[0_0_30px_rgba(204,255,0,0.4)] hover:scale-105 active:scale-95 transition-all duration-300 font-bold text-sm py-4 px-8 rounded-full shadow-[0_4px_25px_rgba(204,255,0,0.25)] flex items-center justify-center gap-2">
-                  Start Saving Free <ArrowRight className="w-4 h-4 stroke-[3]" />
+                  Login <ArrowRight className="w-4 h-4 stroke-[3]" />
                 </button>
               </Link>
             </div>
@@ -1026,19 +1017,17 @@ export default function LandingPage() {
                   /* LINE FOR CUSTOMIZATION: Set GIF opacity here */
                   opacity: resolvedTheme === "dark" ? activeGifSettings.opacityDark : activeGifSettings.opacityLight,
                   /* Dim GIF brightness in dark mode to soften the white spotlight contrast */
-                  filter: resolvedTheme === "dark" ? "brightness(0.62) contrast(1.18)" : "none",
+                  filter: resolvedTheme === "dark" ? "brightness(0.85) contrast(1.05)" : "none",
                 }}
               />
               {/* Radial gradient mask overlay to fade the edges into background colors */}
               <div
-                className="absolute inset-0 bg-gradient-radial pointer-events-none"
+                className="absolute inset-0 pointer-events-none"
                 style={{
-                  /* LINE FOR CUSTOMIZATION: Adjust radial gradient fade pattern here */
-                  background: resolvedTheme === "dark"
-                    ? activeGifSettings.radialDark
-                    : activeGifSettings.radialLight
+                  background: resolvedTheme === "dark" ? activeGifSettings.radialDark : activeGifSettings.radialLight,
                 }}
               />
+
             </motion.div>
           )
         ))}

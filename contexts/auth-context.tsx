@@ -49,6 +49,7 @@ export type User = {
   };
   preferences: {
     spendingLimit: number;
+    quickTransferCategories?: string[];
   };
 };
 
@@ -90,6 +91,7 @@ const defaultPermissionsForRole = (_role: UserRole) => ({
 
 const defaultPreferences = {
   spendingLimit: 300000,
+  quickTransferCategories: [] as string[],
 };
 
 const resolveOwnerAccess = async (

@@ -5,23 +5,31 @@
 @layer base {
   :root {
     /* Main Background: Beige-cream paper colour */
-    --background: 74 20% 94%;           /* #eff1e9 */
-    --foreground: 210 10% 4%;           /* #0c0d0e - Almost black for text */
+    --background: 74 20% 94%;
+    /* #eff1e9 */
+    --foreground: 210 10% 4%;
+    /* #0c0d0e - Almost black for text */
 
     /* Cards are pure white in the mockup, with rounded corners and soft shadow */
-    --card: 0 0% 100%;                  /* #ffffff */
-    --card-foreground: 210 10% 4%;      /* #0c0d0e */
+    --card: 0 0% 100%;
+    /* #ffffff */
+    --card-foreground: 210 10% 4%;
+    /* #0c0d0e */
 
     /* Popovers / Dropdowns */
-    --popover: 0 0% 100%;               /* #ffffff */
+    --popover: 0 0% 100%;
+    /* #ffffff */
     --popover-foreground: 210 10% 4%;
 
     /* Primary color: Electric Lime Green */
-    --primary: 76 95% 55%;              /* #bbf246 or #b5f529 - Electric Lime */
-    --primary-foreground: 0 0% 0%;       /* Black text on lime */
+    --primary: 76 95% 55%;
+    /* #bbf246 or #b5f529 - Electric Lime */
+    --primary-foreground: 0 0% 0%;
+    /* Black text on lime */
 
     /* Secondary: Soft beige/grey for inputs and secondary buttons */
-    --secondary: 75 14% 90%;            /* #e9ebe2 */
+    --secondary: 75 14% 90%;
+    /* #e9ebe2 */
     --secondary-foreground: 210 10% 4%;
 
     /* Muted elements */
@@ -33,11 +41,14 @@
     --accent-foreground: 0 0% 0%;
 
     /* Borders: Very subtle grey-beige */
-    --border: 75 12% 86%;               /* #e0e2d9 */
+    --border: 75 12% 86%;
+    /* #e0e2d9 */
     --input: 75 12% 86%;
-    --ring: 76 95% 55%;                 /* Focus ring in lime */
+    --ring: 76 95% 55%;
+    /* Focus ring in lime */
 
-    --radius: 1.5rem;                   /* Premium large border radius (24px) for cards */
+    --radius: 1.5rem;
+    /* Premium large border radius (24px) for cards */
 
     /* Grid background colors */
     --grid-bg: #eff1e9;
@@ -92,7 +103,7 @@
 /* Main layout grid pattern background */
 .grid-bg-pattern {
   background-color: #eff1e9;
-  background-image: 
+  background-image:
     linear-gradient(rgba(0, 0, 0, 0.035) 1px, transparent 1px),
     linear-gradient(90deg, rgba(0, 0, 0, 0.035) 1px, transparent 1px);
   background-size: 24px 24px;
@@ -101,7 +112,7 @@
 
 .dark .grid-bg-pattern {
   background-color: #050505;
-  background-image: 
+  background-image:
     linear-gradient(rgba(255, 255, 255, 0.018) 1px, transparent 1px),
     linear-gradient(90deg, rgba(255, 255, 255, 0.018) 1px, transparent 1px);
 }
@@ -111,7 +122,8 @@
   background-color: #000000;
   color: #ffffff;
   border: 1px solid #000000;
-  border-radius: 9999px; /* Pill style */
+  border-radius: 9999px;
+  /* Pill style */
   font-weight: 600;
   transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
@@ -122,9 +134,10 @@
 .button-gradient:hover {
   background-color: #1a1a1a;
   transform: translateY(-2px);
-  box-shadow: 
+  box-shadow:
     0 6px 20px rgba(0, 0, 0, 0.15),
-    0 0 12px rgba(204, 255, 0, 0.4); /* Lime glow */
+    0 0 12px rgba(204, 255, 0, 0.4);
+  /* Lime glow */
   border-color: #ccff00;
 }
 
@@ -143,9 +156,10 @@
 .card-gradient {
   background: #ffffff !important;
   border: 1px solid rgba(0, 0, 0, 0.04) !important;
-  border-radius: 1.5rem !important; /* 24px */
-  box-shadow: 
-    0 10px 30px -10px rgba(0, 0, 0, 0.04), 
+  border-radius: 1.5rem !important;
+  /* 24px */
+  box-shadow:
+    0 10px 30px -10px rgba(0, 0, 0, 0.04),
     0 1px 3px rgba(0, 0, 0, 0.02) !important;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   color: #0c0d0e !important;
@@ -153,8 +167,8 @@
 
 .card-gradient:hover {
   transform: translateY(-2px);
-  box-shadow: 
-    0 20px 40px -15px rgba(0, 0, 0, 0.06), 
+  box-shadow:
+    0 20px 40px -15px rgba(0, 0, 0, 0.06),
     0 1px 3px rgba(0, 0, 0, 0.02),
     0 0 1px rgba(204, 255, 0, 0.4) !important;
   border-color: rgba(204, 255, 0, 0.3) !important;
@@ -165,8 +179,8 @@
   background: #ffffff !important;
   border: 1px solid rgba(0, 0, 0, 0.04) !important;
   border-radius: 1.5rem !important;
-  box-shadow: 
-    0 10px 30px -10px rgba(0, 0, 0, 0.04), 
+  box-shadow:
+    0 10px 30px -10px rgba(0, 0, 0, 0.04),
     0 1px 3px rgba(0, 0, 0, 0.02) !important;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   position: relative;
@@ -175,8 +189,8 @@
 
 .stats-card:hover {
   transform: translateY(-4px);
-  box-shadow: 
-    0 20px 40px -15px rgba(0, 0, 0, 0.06), 
+  box-shadow:
+    0 20px 40px -15px rgba(0, 0, 0, 0.06),
     0 1px 3px rgba(0, 0, 0, 0.02) !important;
   border-color: rgba(204, 255, 0, 0.4) !important;
 }
@@ -186,8 +200,8 @@
   background: #ffffff !important;
   border: 1px solid rgba(0, 0, 0, 0.04) !important;
   border-radius: 1.5rem !important;
-  box-shadow: 
-    0 10px 30px -10px rgba(0, 0, 0, 0.04), 
+  box-shadow:
+    0 10px 30px -10px rgba(0, 0, 0, 0.04),
     0 1px 3px rgba(0, 0, 0, 0.02) !important;
   padding: 24px;
 }
@@ -199,7 +213,7 @@
 }
 
 .glow-accent-strong {
-  box-shadow: 
+  box-shadow:
     0 0 25px rgba(204, 255, 0, 0.35),
     0 0 50px rgba(204, 255, 0, 0.15);
   border: 1px solid rgba(204, 255, 0, 0.8);
@@ -253,11 +267,14 @@
 
 /* Animations */
 @keyframes glow-pulse {
-  0%, 100% {
+
+  0%,
+  100% {
     box-shadow: 0 0 15px rgba(204, 255, 0, 0.2);
   }
+
   50% {
-    box-shadow: 
+    box-shadow:
       0 0 25px rgba(204, 255, 0, 0.4),
       0 0 45px rgba(204, 255, 0, 0.15);
   }
@@ -268,8 +285,15 @@
 }
 
 @keyframes float {
-  0%, 100% { transform: translateY(0px); }
-  50% { transform: translateY(-8px); }
+
+  0%,
+  100% {
+    transform: translateY(0px);
+  }
+
+  50% {
+    transform: translateY(-8px);
+  }
 }
 
 .animate-float {
@@ -278,25 +302,23 @@
 
 @keyframes marquee {
 
-0%{
+  0% {
 
-transform:translateX(0%)
+    transform: translateX(0%)
+  }
 
-}
+  100% {
 
-100%{
-
-transform:translateX(-50%)
-
-}
+    transform: translateX(-50%)
+  }
 
 }
 
-.animate-marquee{
+.animate-marquee {
 
-animation:marquee 18s linear infinite;
+  animation: marquee 18s linear infinite;
 
-width:max-content;
+  width: max-content;
 
 }
 
@@ -305,57 +327,56 @@ width:max-content;
   image-rendering: crisp-edges;
 }
 
-@keyframes marquee{
+@keyframes marquee {
 
-0%{
+  0% {
 
-transform:translateX(0)
+    transform: translateX(0)
+  }
 
-}
+  100% {
 
-100%{
-
-transform:translateX(-50%)
-
-}
+    transform: translateX(-50%)
+  }
 
 }
 
-.animate-marquee{
+.animate-marquee {
 
-animation:marquee 25s linear infinite;
-
-}
-
-.animate-marquee-reverse{
-
-animation:marquee 25s linear infinite reverse;
-
-}
-@keyframes bankScroll{
-
-0%{
-
-transform:translateX(0);
+  animation: marquee 25s linear infinite;
 
 }
 
-100%{
+.animate-marquee-reverse {
 
-transform:translateX(-33.33%);
-
-}
+  animation: marquee 25s linear infinite reverse;
 
 }
 
-.animate-bank-scroll{
+@keyframes bankScroll {
 
-animation:bankScroll 30s linear infinite;
+  0% {
+
+    transform: translateX(0);
+
+  }
+
+  100% {
+
+    transform: translateX(-33.33%);
+
+  }
 
 }
 
-.animate-bank-scroll:hover{
+.animate-bank-scroll {
 
-animation-play-state:paused;
+  animation: bankScroll 30s linear infinite;
+
+}
+
+.animate-bank-scroll:hover {
+
+  animation-play-state: paused;
 
 }

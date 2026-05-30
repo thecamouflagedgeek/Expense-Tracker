@@ -17,7 +17,7 @@ export function ClientProviders({ children }: { children: React.ReactNode }) {
   const isLandingPage = pathname === "/"
 
   return (
-    <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false}>
+    <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false} forcedTheme={isLandingPage ? undefined : "light"}>
       <NotificationProvider>
         <AuthProvider>
           <RoleProvider>

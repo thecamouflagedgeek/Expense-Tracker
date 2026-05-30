@@ -34,6 +34,7 @@ import {
   Archive,
   Activity,
   UserCog,
+  Sliders,
 } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import {
@@ -848,34 +849,94 @@ function QuickTransfer({
   const { addNotification } = useNotification();
   const { addTransaction } = useTransactions();
   const { permissions } = useRole();
-  const [selectedFriend, setSelectedFriend] = useState(0);
+  const { user, updatePersonalSettings } = useAuth();
+
+  // Local state for setup/editing modal
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [categoriesDraft, setCategoriesDraft] = useState<string[]>(["", "", "", ""]);
+  const [selectedCategoryIdx, setSelectedCategoryIdx] = useState(0);
   const [amount, setAmount] = useState("");
   const [sending, setSending] = useState(false);
+  const [savingSettings, setSavingSettings] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showSuccess, setShowSuccess] = useState(false);
 
-  const friends = [
-    {
-      name: "Anna Davis",
-      initials: "AD",
-      color: "bg-rose-500/10 text-rose-600 border-rose-500/20",
-    },
-    {
-      name: "Marcus Harris",
-      initials: "MH",
-      color: "bg-sky-500/10 text-sky-600 border-sky-500/20",
-    },
-    {
-      name: "Kelsey Long",
-      initials: "KL",
-      color: "bg-purple-500/10 text-purple-600 border-purple-500/20",
-    },
-    {
-      name: "Tyler Lee",
-      initials: "TL",
-      color: "bg-[#ccff00]/15 text-black border-black/10",
-    },
-  ];
+  // Load configured categories
+  const categories = useMemo(() => {
+    // 1. Check user preferences
+    if (user?.preferences?.quickTransferCategories && user.preferences.quickTransferCategories.length === 4) {
+      return user.preferences.quickTransferCategories;
+    }
+    // 2. Check localStorage fallback
+    if (typeof window !== "undefined") {
+      const stored = localStorage.getItem("ctrlfund_quick_transfers");
+      if (stored) {
+        try {
+          const parsed = JSON.parse(stored);
+          if (Array.isArray(parsed) && parsed.length === 4) {
+            return parsed;
+          }
+        } catch (e) {
+          console.error("Failed to parse local quick transfers", e);
+        }
+      }
+    }
+    return [];
+  }, [user?.preferences?.quickTransferCategories]);
+
+  // Open setup modal (prefill if editing, else default placeholders)
+  const openSetup = () => {
+    if (categories.length === 4) {
+      setCategoriesDraft([...categories]);
+    } else {
+      setCategoriesDraft(["Grocery", "Fuel", "Food", "Parties"]);
+    }
+    setIsModalOpen(true);
+  };
+
+  const handleSaveCategories = async () => {
+    // Validate
+    const cleaned = categoriesDraft.map(c => c.trim());
+    if (cleaned.some(c => c === "")) {
+      addNotification({
+        message: "Please fill out all 4 categories.",
+        type: "error",
+      });
+      return;
+    }
+
+    setSavingSettings(true);
+    try {
+      // 1. Save to Firebase
+      if (user) {
+        await updatePersonalSettings({
+          quickTransferCategories: cleaned,
+        });
+      }
+      // 2. Save to LocalStorage fallback
+      if (typeof window !== "undefined") {
+        localStorage.setItem("ctrlfund_quick_transfers", JSON.stringify(cleaned));
+      }
+      addNotification({
+        message: "Quick transfer categories updated!",
+        type: "success",
+      });
+      setIsModalOpen(false);
+    } catch (err: any) {
+      console.error("Save quick transfer categories error:", err);
+      // Fallback save locally if DB fails
+      if (typeof window !== "undefined") {
+        localStorage.setItem("ctrlfund_quick_transfers", JSON.stringify(cleaned));
+      }
+      addNotification({
+        message: "Saved locally. Failed to sync online.",
+        type: "info",
+      });
+      setIsModalOpen(false);
+    } finally {
+      setSavingSettings(false);
+    }
+  };
 
   const handleSend = async () => {
     if (!permissions.canAddTransactions) {
@@ -908,9 +969,9 @@ function QuickTransfer({
     setError(null);
 
     try {
-      const friend = friends[selectedFriend];
+      const categoryName = categories[selectedCategoryIdx];
       await addTransaction({
-        title: `Transfer to ${friend.name}`,
+        title: `Transfer: ${categoryName}`,
         amount: amountInINR,
         type: "expense",
         category: "Transfer",
@@ -920,7 +981,7 @@ function QuickTransfer({
       setAmount("");
       setShowSuccess(true);
       addNotification({
-        message: `Transfer sent to ${friend.name}.`,
+        message: `Transfer complete for ${categoryName}.`,
         type: "success",
       });
       setTimeout(() => setShowSuccess(false), 1200);
@@ -935,117 +996,257 @@ function QuickTransfer({
     }
   };
 
+  // Aesthetic HSL color styles for the 4 categories
+  const categoryStyles = [
+    { color: "bg-rose-500/10 text-rose-600 border-rose-500/20" },
+    { color: "bg-sky-500/10 text-sky-600 border-sky-500/20" },
+    { color: "bg-purple-500/10 text-purple-600 border-purple-500/20" },
+    { color: "bg-[#ccff00]/15 text-black border-black/10" },
+  ];
+
+  const getInitials = (name: string) => {
+    if (!name) return "??";
+    const parts = name.trim().split(/\s+/);
+    if (parts.length >= 2) {
+      return (parts[0].charAt(0) + parts[1].charAt(0)).toUpperCase();
+    }
+    return name.slice(0, 2).toUpperCase();
+  };
+
+  const hasSetup = categories.length === 4;
+
   return (
-    <Card className="card-gradient border-none p-5">
-      <CardHeader className="p-0 mb-4 flex flex-row items-center justify-between">
-        <CardTitle className="text-base font-bold text-black tracking-tight">
-          Quick Transfer
-        </CardTitle>
-        <Sparkles className="w-4 h-4 text-black opacity-35" />
-      </CardHeader>
-
-      <CardContent className="p-0 flex flex-col gap-5">
-        {/* Horizontal Friends List */}
-        <div className="flex items-center justify-between gap-1.5 py-1">
-          {friends.map((friend, i) => {
-            const isSelected = selectedFriend === i;
-            return (
-              <button
-                key={friend.name}
-                onClick={() => setSelectedFriend(i)}
-                className="flex flex-col items-center gap-1.5 focus:outline-none group"
-                aria-pressed={isSelected}
+    <>
+      <Card className="card-gradient border-none p-5 relative overflow-hidden flex flex-col justify-between">
+        <CardHeader className="p-0 mb-4 flex flex-row items-center justify-between">
+          <CardTitle className="text-base font-bold text-black tracking-tight">
+            Quick Transfer
+          </CardTitle>
+          <div className="flex items-center gap-2">
+            {hasSetup && (
+              <button 
+                onClick={openSetup}
+                className="p-1 hover:bg-black/5 rounded-lg transition text-black/50 hover:text-black"
+                title="Edit quick transfers"
               >
-                <div
-                  className={`w-11 h-11 rounded-full flex items-center justify-center font-bold text-xs border shadow-sm transition-all duration-300 ${friend.color} ${
-                    isSelected
-                      ? "ring-2 ring-black scale-105 shadow-md border-transparent"
-                      : "group-hover:scale-105"
-                  }`}
-                >
-                  {friend.initials}
-                </div>
-                <span
-                  className={`text-[9px] font-bold tracking-tight transition-colors truncate max-w-[50px] ${
-                    isSelected
-                      ? "text-black"
-                      : "text-black/45 group-hover:text-black"
-                  }`}
-                >
-                  {friend.name.split(" ")[0]}
-                </span>
+                <Sliders className="w-3.5 h-3.5" />
               </button>
-            );
-          })}
-        </div>
-
-        {/* Amount Input */}
-        <div className="flex flex-col gap-2">
-          <label className="text-[10px] font-bold text-black/40 uppercase tracking-wider">
-            Transfer Amount
-          </label>
-          <div className="relative rounded-2xl border border-black/5 bg-black/[0.02] hover:bg-black/[0.04] transition focus-within:bg-white focus-within:ring-2 focus-within:ring-black focus-within:border-transparent overflow-hidden">
-            {/* Currency Symbol Prefix */}
-            <div className="absolute left-4 top-1/2 -translate-y-1/2 font-black text-sm text-black/50 select-none">
-              {symbol}
-            </div>
-            <input
-              type="number"
-              min="0"
-              step="0.01"
-              placeholder="0.00"
-              value={amount}
-              onChange={(e) => {
-                setAmount(e.target.value);
-                if (error) {
-                  setError(null);
-                }
-              }}
-              disabled={
-                sending ||
-                !permissions.canAddTransactions ||
-                availableBalanceInINR <= 0
-              }
-              className="w-full bg-transparent pl-9 pr-4 py-3 text-sm font-extrabold text-black focus:outline-none placeholder:text-black/25"
-            />
-          </div>
-          {error && (
-            <p className="text-[10px] font-bold text-red-500">{error}</p>
-          )}
-          {availableBalanceInINR <= 0 && (
-            <p className="text-[10px] font-semibold text-black/45">
-              No amount left to transfer.
-            </p>
-          )}
-          {!permissions.canAddTransactions && (
-            <p className="text-[10px] font-semibold text-black/45">
-              Transfers are view-only for your role.
-            </p>
-          )}
-        </div>
-
-        {/* Send Button */}
-        {permissions.canAddTransactions && (
-          <button
-            onClick={handleSend}
-            disabled={sending || availableBalanceInINR <= 0}
-            className={`button-gradient w-full py-3 text-xs flex items-center justify-center gap-1.5 disabled:opacity-50 ${showSuccess ? "ring-2 ring-black/10" : ""}`}
-          >
-            {sending ? (
-              <>
-                <Loader2 className="w-4 h-4 animate-spin text-[#ccff00]" />
-                <span>Processing...</span>
-              </>
-            ) : (
-              <>
-                <span>Send Money</span>
-                <ArrowRight className="w-4 h-4 text-[#ccff00]" />
-              </>
             )}
-          </button>
+            <Sparkles className="w-4 h-4 text-black opacity-35" />
+          </div>
+        </CardHeader>
+
+        <CardContent className="p-0 flex flex-col gap-5 flex-1 justify-center">
+          {!hasSetup ? (
+            /* First-Time State */
+            <div className="flex flex-col items-center justify-center py-6 text-center gap-4">
+              <div className="w-12 h-12 rounded-2xl bg-black/[0.03] border border-black/5 flex items-center justify-center text-black/40">
+                <Sparkles className="w-6 h-6" />
+              </div>
+              <div>
+                <h4 className="text-xs font-black text-black">No shortcuts defined</h4>
+                <p className="text-[10px] text-black/45 font-semibold mt-1 leading-relaxed max-w-[200px]">
+                  Define 4 custom categories for single-click dashboard transfers.
+                </p>
+              </div>
+              <button
+                onClick={openSetup}
+                className="button-gradient w-full py-2.5 text-xs font-bold"
+              >
+                Set Up Quick Transfers
+              </button>
+            </div>
+          ) : (
+            /* Active State */
+            <>
+              {/* Horizontal Categories List */}
+              <div className="flex items-center justify-between gap-1.5 py-1">
+                {categories.map((cat, i) => {
+                  const isSelected = selectedCategoryIdx === i;
+                  const style = categoryStyles[i % categoryStyles.length];
+                  return (
+                    <button
+                      key={cat}
+                      onClick={() => setSelectedCategoryIdx(i)}
+                      className="flex flex-col items-center gap-1.5 focus:outline-none group flex-1 min-w-0"
+                      aria-pressed={isSelected}
+                    >
+                      <div
+                        className={`w-11 h-11 rounded-full flex items-center justify-center font-bold text-xs border shadow-sm transition-all duration-300 ${style.color} ${
+                          isSelected
+                            ? "ring-2 ring-black scale-105 shadow-md border-transparent"
+                            : "group-hover:scale-105"
+                        }`}
+                      >
+                        {getInitials(cat)}
+                      </div>
+                      <span
+                        className={`text-[9px] font-bold tracking-tight transition-colors truncate max-w-full w-full text-center ${
+                          isSelected
+                            ? "text-black"
+                            : "text-black/45 group-hover:text-black"
+                        }`}
+                      >
+                        {cat}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Amount Input */}
+              <div className="flex flex-col gap-2">
+                <label className="text-[10px] font-bold text-black/40 uppercase tracking-wider">
+                  Transfer Amount
+                </label>
+                <div className="relative rounded-2xl border border-black/5 bg-black/[0.02] hover:bg-black/[0.04] transition focus-within:bg-white focus-within:ring-2 focus-within:ring-black focus-within:border-transparent overflow-hidden">
+                  <div className="absolute left-4 top-1/2 -translate-y-1/2 font-black text-sm text-black/50 select-none">
+                    {symbol}
+                  </div>
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    placeholder="0.00"
+                    value={amount}
+                    onChange={(e) => {
+                      setAmount(e.target.value);
+                      if (error) {
+                        setError(null);
+                      }
+                    }}
+                    disabled={
+                      sending ||
+                      !permissions.canAddTransactions ||
+                      availableBalanceInINR <= 0
+                    }
+                    className="w-full bg-transparent pl-9 pr-4 py-3 text-sm font-extrabold text-black focus:outline-none placeholder:text-black/25"
+                  />
+                </div>
+                {error && (
+                  <p className="text-[10px] font-bold text-red-500">{error}</p>
+                )}
+                {availableBalanceInINR <= 0 && (
+                  <p className="text-[10px] font-semibold text-black/45">
+                    No amount left to transfer.
+                  </p>
+                )}
+                {!permissions.canAddTransactions && (
+                  <p className="text-[10px] font-semibold text-black/45">
+                    Transfers are view-only for your role.
+                  </p>
+                )}
+              </div>
+
+              {/* Send Button */}
+              {permissions.canAddTransactions && (
+                <button
+                  onClick={handleSend}
+                  disabled={sending || availableBalanceInINR <= 0}
+                  className={`button-gradient w-full py-3 text-xs flex items-center justify-center gap-1.5 disabled:opacity-50 ${showSuccess ? "ring-2 ring-black/10" : ""}`}
+                >
+                  {sending ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin text-[#ccff00]" />
+                      <span>Processing...</span>
+                    </>
+                  ) : (
+                    <>
+                      <span>Send Money</span>
+                      <ArrowRight className="w-4 h-4 text-[#ccff00]" />
+                    </>
+                  )}
+                </button>
+              )}
+            </>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* SETUP/EDIT CATEGORIES MODAL (Custom premium backdrop blur overlay) */}
+      <AnimatePresence>
+        {isModalOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            {/* Dark blur backdrop */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => !savingSettings && setIsModalOpen(false)}
+              className="absolute inset-0 bg-black/40 backdrop-blur-sm animate-fade-in"
+            />
+
+            {/* Modal Card */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 15 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 15 }}
+              transition={{ type: "spring", duration: 0.4 }}
+              className="relative w-full max-w-sm bg-white border border-black/5 rounded-[2rem] shadow-2xl p-6 flex flex-col gap-6 z-10 overflow-hidden"
+            >
+              <div>
+                <h3 className="text-base font-black text-black tracking-tight">
+                  {hasSetup ? "Configure Quick Transfers" : "Set Up Quick Transfers"}
+                </h3>
+                <p className="text-[10px] text-black/40 font-semibold mt-1">
+                  Define 4 custom transfer shortcuts for single-click logging.
+                </p>
+              </div>
+
+              <div className="flex flex-col gap-3">
+                {categoriesDraft.map((cat, idx) => (
+                  <div key={idx} className="flex flex-col gap-1.5">
+                    <label className="text-[9px] font-black uppercase tracking-wider text-black/40">
+                      Shortcut {idx + 1}
+                    </label>
+                    <input
+                      type="text"
+                      maxLength={18}
+                      placeholder={
+                        idx === 0 ? "Grocery" :
+                        idx === 1 ? "Fuel" :
+                        idx === 2 ? "Food" : "Parties"
+                      }
+                      value={cat}
+                      onChange={(e) => {
+                        const copy = [...categoriesDraft];
+                        copy[idx] = e.target.value;
+                        setCategoriesDraft(copy);
+                      }}
+                      className="w-full h-10 rounded-xl bg-black/[0.02] border border-black/5 px-3 text-xs font-bold text-black focus:outline-none focus:ring-2 focus:ring-black placeholder:text-black/25"
+                    />
+                  </div>
+                ))}
+              </div>
+
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setIsModalOpen(false)}
+                  disabled={savingSettings}
+                  className="flex-1 border border-black/10 hover:bg-black/[0.02] rounded-xl text-xs font-bold py-3 text-black transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleSaveCategories}
+                  disabled={savingSettings}
+                  className="flex-1 button-gradient rounded-xl text-xs font-bold py-3 flex items-center justify-center gap-1.5 disabled:opacity-50"
+                >
+                  {savingSettings ? (
+                    <>
+                      <Loader2 className="w-3.5 h-3.5 animate-spin text-[#ccff00]" />
+                      <span>Saving...</span>
+                    </>
+                  ) : (
+                    <span>Save Changes</span>
+                  )}
+                </button>
+              </div>
+            </motion.div>
+          </div>
         )}
-      </CardContent>
-    </Card>
+      </AnimatePresence>
+    </>
   );
 }
 

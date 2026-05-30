@@ -142,8 +142,8 @@ export function Navigation() {
         </div>
       </aside>
 
-      {/* 2. PREMIUM HORIZONTAL TOPBAR LAYOUT */}
-      <header className="fixed top-0 left-0 right-0 h-20 z-40 bg-[#eff1e9]/80 backdrop-blur-md border-b border-black/5 flex items-center justify-between px-6 md:px-12 md:pl-28 transition-all">
+      {/* 2a. DESKTOP PREMIUM HORIZONTAL TOPBAR LAYOUT (hidden md:flex) */}
+      <header className="hidden md:flex fixed top-0 left-0 right-0 h-20 z-40 bg-[#eff1e9]/80 backdrop-blur-md border-b border-black/5 items-center justify-between px-12 pl-28 transition-all">
         {/* Page Title & Currency Dropdown */}
         <div className="flex items-center gap-6">
           <h1 className="text-2xl font-black tracking-tight text-[#0c0d0e]">
@@ -251,6 +251,143 @@ export function Navigation() {
                   <span className="text-xs font-bold text-[#0c0d0e] hidden md:inline">
                     {user.name}
                   </span>
+                  <div className="w-7 h-7 rounded-full bg-[#ccff00] text-black font-black text-xs flex items-center justify-center shadow-inner">
+                    {user.name?.split(" ").map(w => w.charAt(0)).join("") || "JM"}
+                  </div>
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent className="bg-white border-black/5 text-[#0c0d0e] rounded-xl shadow-2xl w-56 mr-2 z-50">
+                <DropdownMenuLabel className="font-bold">{user.name}</DropdownMenuLabel>
+                <div className="px-3 pb-2 text-[10px] text-black/50 truncate">{user.email}</div>
+                <DropdownMenuSeparator className="bg-black/5" />
+                
+                <DropdownMenuSeparator className="bg-black/5" />
+                
+                <DropdownMenuItem 
+                  onClick={() => router.push("/dashboard")}
+                  className="text-xs py-2 px-3 cursor-pointer hover:bg-black/5"
+                >
+                  <Home className="w-3.5 h-3.5 mr-2 opacity-70" /> Dashboard Overview
+                </DropdownMenuItem>
+
+                <DropdownMenuItem 
+                  onClick={handleLogout}
+                  className="text-xs py-2 px-3 cursor-pointer text-red-500 hover:bg-red-50 hover:text-red-600 font-semibold"
+                >
+                  <LogOut className="w-3.5 h-3.5 mr-2" /> Logout
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
+        </div>
+      </header>
+
+      {/* 2b. MOBILE PREMIUM HORIZONTAL TOPBAR LAYOUT (md:hidden flex) */}
+      <header className="md:hidden flex fixed top-0 left-0 right-0 h-20 z-40 bg-[#eff1e9]/80 backdrop-blur-md border-b border-black/5 items-center justify-between px-6 transition-all">
+        {/* Page Title & Currency Dropdown */}
+        <div className="flex items-center gap-3">
+          <h1 className="text-xl font-black tracking-tight text-[#0c0d0e] truncate max-w-[130px]">
+            {getPageTitle()}
+          </h1>
+
+          {/* Global Currency Selection Toggler - grouped by region */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="bg-white hover:bg-black/5 border-black/5 text-[#0c0d0e] font-semibold rounded-full shadow-sm flex items-center gap-1 text-[10px] px-3 h-8"
+              >
+                <Globe className="w-3 h-3 opacity-55" />
+                <span>{SUPPORTED_CURRENCIES[currency].symbol}</span>
+                <ChevronDown className="w-3 h-3 opacity-55" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent className="bg-white border-black/5 text-[#0c0d0e] rounded-xl shadow-xl z-50 max-h-[70vh] overflow-y-auto w-52">
+              {currencyGroups.map((group) => (
+                <div key={group.label}>
+                  <DropdownMenuLabel className="text-black/40 text-[9px] font-black uppercase tracking-wider px-3 pt-3 pb-1">
+                    {group.label}
+                  </DropdownMenuLabel>
+                  {group.codes.map((code) => {
+                    const item = SUPPORTED_CURRENCIES[code]
+                    return (
+                      <DropdownMenuItem
+                        key={code}
+                        onClick={() => setCurrency(code)}
+                        className={`hover:bg-[#ccff00]/15 hover:text-black font-medium cursor-pointer text-xs px-3 py-2 flex items-center justify-between gap-2 ${
+                          currency === code ? "bg-[#ccff00]/25 font-bold text-black" : ""
+                        }`}
+                      >
+                        <span>{item.label}</span>
+                        {currency === code && <span className="text-[9px] font-black text-black bg-[#ccff00] px-1.5 py-0.5 rounded-full">Active</span>}
+                      </DropdownMenuItem>
+                    )
+                  })}
+                  <DropdownMenuSeparator className="bg-black/5" />
+                </div>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+
+        {/* Header Actions: Notification panel trigger, mock exports, and User profile */}
+        <div className="flex items-center gap-2">
+          {/* Notification Bell Icon */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button className="w-9 h-9 rounded-full bg-white hover:bg-black/5 flex items-center justify-center text-[#0c0d0e] shadow-sm relative transition-all duration-200 border border-black/5">
+                <Bell className="w-4 h-4" />
+                <span className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full bg-red-500 shadow-[0_0_8px_#ef4444]" />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent className="bg-white border-black/5 text-[#0c0d0e] rounded-xl shadow-2xl w-80 mr-2 z-50">
+              <DropdownMenuLabel className="text-[#0c0d0e] text-xs font-bold px-3 py-2">Recent Notifications</DropdownMenuLabel>
+              <DropdownMenuSeparator className="bg-black/5" />
+              <div className="max-h-60 overflow-y-auto px-1 py-1">
+                <div className="p-3 text-xs border-b border-black/5 hover:bg-black/5 transition rounded-lg">
+                  <p className="font-semibold text-black">Seeded default mockups</p>
+                  <p className="text-black/60 mt-0.5">Paypal, Twitch, and Airbnb transactions populated in {currency}</p>
+                </div>
+                <div className="p-3 text-xs border-b border-black/5 hover:bg-black/5 transition rounded-lg">
+                  <p className="font-semibold text-black">{user?.name || "User"} logged in</p>
+                  <p className="text-black/60 mt-0.5">Successful login to the workspace</p>
+                </div>
+                <div className="p-3 text-xs hover:bg-black/5 transition rounded-lg">
+                  <p className="font-semibold text-black">Active Currency Set</p>
+                  <p className="text-black/60 mt-0.5">Amounts mapped dynamically to {currency} ({SUPPORTED_CURRENCIES[currency].symbol})</p>
+                </div>
+              </div>
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          {/* Backup/Export Icon (Mock dropdown selector) */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button className="w-9 h-9 rounded-full bg-white hover:bg-black/5 flex items-center justify-center text-[#0c0d0e] shadow-sm transition-all duration-200 border border-black/5">
+                <FileDown className="w-4.5 h-4.5" />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent className="bg-white border-black/5 text-[#0c0d0e] rounded-xl shadow-xl w-48 mr-2 z-50">
+              <DropdownMenuLabel className="text-[10px] font-bold text-black/45 uppercase tracking-wider px-3">Export utilities</DropdownMenuLabel>
+              <DropdownMenuSeparator className="bg-black/5" />
+              <DropdownMenuItem onClick={() => router.push("/dashboard")} className="text-xs py-2 px-3 cursor-pointer hover:bg-black/5">
+                Go to Dashboard
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => router.push("/transactions")} className="text-xs py-2 px-3 cursor-pointer hover:bg-black/5">
+                Finance Hub
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => router.push("/notes")} className="text-xs py-2 px-3 cursor-pointer hover:bg-black/5">
+                Export Notes to PDF
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          {/* User Profile Badge (Joseph Mitchell) */}
+          {user && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button className="flex items-center gap-1.5 p-1 rounded-full bg-white hover:bg-black/5 shadow-sm transition-all duration-200 border border-black/5 cursor-pointer">
                   <div className="w-7 h-7 rounded-full bg-[#ccff00] text-black font-black text-xs flex items-center justify-center shadow-inner">
                     {user.name?.split(" ").map(w => w.charAt(0)).join("") || "JM"}
                   </div>
