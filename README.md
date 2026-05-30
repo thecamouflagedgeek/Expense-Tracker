@@ -179,21 +179,6 @@ Upon transactional changes, aggregation engines compile historical values in the
 
 ---
 
-## Environment Variables
-
-The application relies on the following configurations to sync with Firebase services:
-
-| Key | Description | Example |
-| :--- | :--- | :--- |
-| `NEXT_PUBLIC_FIREBASE_API_KEY` | Public Firebase Web SDK API credential key | `AIzaSyBwxAn...` |
-| `NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN` | Firebase Authentication domain endpoint | `expense-tracker.firebaseapp.com` |
-| `NEXT_PUBLIC_FIREBASE_PROJECT_ID` | Assigned Firebase project identifier code | `expense-tracker` |
-| `NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET` | Storage bucket address for receipt assets | `expense-tracker.firebasestorage.app` |
-| `NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID` | Cloud Messaging service sender ID code | `604057320768` |
-| `NEXT_PUBLIC_FIREBASE_APP_ID` | Registered Web application unique ID | `1:6040:web:793` |
-
----
-
 ## Future Improvements
 
 * **Cloud Receipt Storage:** Transition fully to Firebase Storage for hosting receipt PDFs and images, moving away from local cache mechanisms.
