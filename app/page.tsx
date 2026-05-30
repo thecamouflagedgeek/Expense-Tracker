@@ -166,7 +166,8 @@ export default function LandingPage() {
       <div className="absolute bottom-10 left-10 w-[500px] h-[500px] bg-[#ccff00]/4 rounded-full blur-[140px] pointer-events-none" />
 
       {/* HEADER / NAVIGATION */}
-      <header className="fixed top-0 left-0 right-0 z-50 bg-white/25 dark:bg-[#050505]/45 backdrop-blur-2xl border-b border-black/5 dark:border-white/5 shadow-sm px-6 md:px-12 py-5 transition-all duration-300">
+      <header className="fixed top-[4dvw] left-4 right-4 z-50 rounded-3xl filter backdrop-filter-[url('#liquidFilter')] border border-black/10 dark:border-white/10 shadow-sm px-6 md:px-12 py-5 transition-all duration-300">
+        <div className="absolute inset-0 w-full h-full bg-black/25 -z-10 rounded-3xl" />
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           {/* Logo */}
           <Link href="/" className="flex items-center gap-3 group">
@@ -193,6 +194,9 @@ export default function LandingPage() {
             </a>
             <a href="#tools" className="text-sm text-black/60 dark:text-white/60 hover:text-[#ccff00] font-semibold transition-colors duration-200">
               Tools
+            </a>
+             <a href="#about" className="text-sm text-black/60 dark:text-white/60 hover:text-[#ccff00] font-semibold transition-colors duration-200">
+              About us
             </a>
           </nav>
 
