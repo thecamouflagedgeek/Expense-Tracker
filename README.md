@@ -179,15 +179,6 @@ Upon transactional changes, aggregation engines compile historical values in the
 
 ---
 
-## Future Improvements
-
-* **Cloud Receipt Storage:** Transition fully to Firebase Storage for hosting receipt PDFs and images, moving away from local cache mechanisms.
-* **Advanced Budgeting Engine:** Establish strict monthly budgets per category with custom email triggers using Firebase Cloud Functions.
-* **Better Reporting:** Custom calendar exports allowing users to query date ranges, build comparison matrices, and schedule PDF updates.
-* **Predictive Analytics:** Integrate spending trend projections using client-side regressions to suggest optimization steps.
-
----
-
 ## Contributing
 
 Contributions are welcome! Please follow these steps to contribute:
