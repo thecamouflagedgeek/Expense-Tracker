@@ -157,7 +157,7 @@ Upon transactional changes, aggregation engines compile historical values in the
 
 2. **Install Dependencies:**
    ```bash
-   npm install
+   npm install or npm install --legacy-peer-deps
    ```
 
 3. **Configure Environment Variables:**
