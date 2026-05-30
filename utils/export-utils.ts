@@ -256,10 +256,6 @@ export const exportDashboardSummaryPDF = (
     averageExpense: number
     totalTransactions: number
     totalNotes: number
-    activeUsers: number
-    pendingUsers: number
-    workspaceAllocation: number
-    workspaceRemaining: number
     categorySpendingData: Array<{ name: string; value: number }>
     transferCount: number
     incomeCount: number
@@ -513,28 +509,24 @@ export const exportDashboardSummaryPDF = (
       currentY = (doc as any).lastAutoTable.finalY + 12
     }
 
-    // Section 4: Workspace Information
+    // Section 4: Notes Summary
     doc.setFontSize(12)
     doc.setTextColor(0, 0, 0)
-    doc.text("Workspace Information", 14, currentY)
+    doc.text("Notes Summary", 14, currentY)
 
     currentY += 8
 
-    const workspaceMetrics = [
+    const notesMetrics = [
       ["Metric", "Value"],
-      ["Active Users", String(dashboardMetrics.activeUsers)],
-      ["Pending Users", String(dashboardMetrics.pendingUsers)],
       ["Total Notes", String(dashboardMetrics.totalNotes)],
-      ["Workspace Allocation", formatCurrency(dashboardMetrics.workspaceAllocation)],
-      ["Remaining Balance", formatCurrency(dashboardMetrics.workspaceRemaining)],
     ]
 
     autoTable(doc, {
       startY: currentY,
 
-      head: workspaceMetrics.slice(0, 1),
+      head: notesMetrics.slice(0, 1),
 
-      body: workspaceMetrics.slice(1),
+      body: notesMetrics.slice(1),
 
       theme: "striped",
 

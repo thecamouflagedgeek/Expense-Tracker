@@ -5,7 +5,7 @@ import { createContext, useContext, useState, useEffect, useCallback } from "rea
 import { useAuth } from "./auth-context"
 import { useNotification } from "./notification-context"
 
-type UserRole = "member" | "owner"
+type UserRole = "member"
 
 type Permissions = {
   canViewDashboard: boolean
@@ -23,8 +23,6 @@ type Permissions = {
   canEditNotes: boolean
   canDeleteNotes: boolean
   canArchiveNotes: boolean
-  canAccessAdminHub: boolean
-  canManageUsers: boolean
 }
 
 type RoleContextType = {
@@ -52,27 +50,6 @@ const defaultPermissions: Record<UserRole, Permissions> = {
     canEditNotes: true,
     canDeleteNotes: true,
     canArchiveNotes: true,
-    canAccessAdminHub: false,
-    canManageUsers: false,
-  },
-  owner: {
-    canViewDashboard: true,
-    canViewTransactions: true,
-    canAddTransactions: true,
-    canEditTransactions: true,
-    canDeleteTransactions: true,
-    canArchiveTransactions: true,
-    canViewReceipts: true,
-    canUploadReceipts: true,
-    canDeleteReceipts: true,
-    canUploadToDrive: true,
-    canViewNotes: true,
-    canCreateNotes: true,
-    canEditNotes: true,
-    canDeleteNotes: true,
-    canArchiveNotes: true,
-    canAccessAdminHub: true,
-    canManageUsers: true,
   },
 }
 
@@ -122,14 +99,12 @@ export const RoleProvider: React.FC<{ children: React.ReactNode }> = ({ children
           canEditNotes: false,
           canDeleteNotes: false,
           canArchiveNotes: false,
-          canAccessAdminHub: false,
-          canManageUsers: false,
         })
         setLoading(false)
         return
       }
 
-      const baseRole: UserRole = userData?.role === "owner" ? "owner" : "member"
+      const baseRole: UserRole = "member"
 
       setCurrentRole(baseRole)
       setPermissions(defaultPermissions[baseRole])

@@ -11,7 +11,7 @@ const publicPaths = ["/login", "/shared/note"]
 
 export function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth()
-  const { currentRole, loading: roleLoading } = useRole()
+  const { loading: roleLoading } = useRole()
   const router = useRouter()
   const pathname = usePathname()
   const isPublicPath = pathname === "/" || publicPaths.some((path) => pathname.startsWith(path))
@@ -25,10 +25,8 @@ export function ProtectedRoute({ children }: { children: React.ReactNode }) {
       router.replace("/login")
     } else if (user && pathname === "/login") {
       router.replace("/dashboard")
-    } else if (user && pathname.startsWith("/admin") && currentRole !== "owner") {
-      router.replace("/dashboard")
     }
-  }, [user, loading, roleLoading, isPublicPath, pathname, router, currentRole])
+  }, [user, loading, roleLoading, isPublicPath, pathname, router])
 
   if (isPublicPath) {
     return <>{children}</>

@@ -62,7 +62,6 @@ export function Navigation() {
   const getPageTitle = () => {
     if (pathname.startsWith("/transactions")) return "Finance"
     if (pathname.startsWith("/notes")) return "Notes"
-    if (pathname.startsWith("/admin")) return "Dashboard"
     return "Dashboard"
   }
 

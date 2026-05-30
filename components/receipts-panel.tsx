@@ -47,9 +47,7 @@ export function ReceiptsPanel() {
     try {
       const stored = localStorage.getItem(LOCAL_STORAGE_RECEIPTS_KEY)
       const parsed: Receipt[] = stored ? JSON.parse(stored) : []
-      if (permissions.canManageUsers) {
-        setReceipts(parsed)
-      } else if (user) {
+      if (user) {
         setReceipts(parsed.filter((r) => r.userId === user.id))
       } else {
         setReceipts([])
@@ -64,7 +62,7 @@ export function ReceiptsPanel() {
     const handleRefresh = () => loadReceipts()
     window.addEventListener("receipts-updated", handleRefresh)
     return () => window.removeEventListener("receipts-updated", handleRefresh)
-  }, [user, permissions.canManageUsers])
+  }, [user])
 
   const filteredReceipts = useMemo(() => {
     if (!query) return receipts

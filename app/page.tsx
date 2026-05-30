@@ -218,7 +218,7 @@ export default function LandingPage() {
           </div>
 
           {/* Mobile Menu Button */}
-          <Link href="/login">
+          <Link href="/login" className="md:hidden">
             <span className="text-sm font-semibold text-black/70 dark:text-white/70 hover:text-black dark:hover:text-white transition-colors py-2.5 px-4 cursor-pointer">
               Log in
             </span>

@@ -27,13 +27,6 @@ import {
   File,
   Wifi,
   ArrowRight,
-  Sparkles,
-  Users,
-  Briefcase,
-  ClipboardList,
-  Archive,
-  Activity,
-  UserCog,
   Sliders,
 } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -50,10 +43,8 @@ export default function DashboardPage() {
     error: transactionsError,
   } = useTransactions();
   const { notes, loading: notesLoading, error: notesError } = useNotes();
-  const { users, loading: usersLoading, error: usersError } = useAuth();
-  const { permissions, currentRole } = useRole();
+  const { loading: authLoading, error: authError } = useAuth();
   const { format } = useCurrency();
-  const { addNotification } = useNotification();
 
   const allocationBaseInINR = 300000;
 
@@ -87,8 +78,8 @@ export default function DashboardPage() {
       .reduce((sum, transaction) => sum + Math.abs(transaction.amount), 0);
   }, [filteredTransactions]);
 
-  const loading = transactionsLoading || notesLoading || usersLoading;
-  const error = transactionsError || notesError || usersError;
+  const loading = transactionsLoading || notesLoading || authLoading;
+  const error = transactionsError || notesError || authError;
 
   const totalExpenses = useMemo(() => {
     return totalExpense;
@@ -107,40 +98,9 @@ export default function DashboardPage() {
   }, [filteredTransactions, totalExpenses]);
 
   const totalNotes = notes.length;
-  const archivedNotes = notes.filter((note) => note.isArchived).length;
-  const activeUsers = users.filter((user) => user.isActive).length;
-  const pendingUsers = users.filter((user) => !user.isActive);
-
-  const workspaceAllocation = allocationBaseInINR * Math.max(activeUsers, 1);
-  const workspaceRemaining = Math.max(
-    0,
-    workspaceAllocation + totalIncome - totalExpense,
-  );
   const transferCount = activeTransactions.filter(
     (t) => t.category.toLowerCase() === "transfer",
   ).length;
-
-  const recentActivity = useMemo(() => {
-    const noteItems = notes.map((note) => ({
-      type: "note",
-      title: note.title,
-      timestamp: note.updatedAt,
-      meta: note.isArchived ? "Archived" : "Updated",
-    }));
-    const transactionItems = activeTransactions.map((transaction) => ({
-      type: "transaction",
-      title: transaction.title,
-      timestamp: transaction.date,
-      meta: format(transaction.amount),
-    }));
-
-    return [...noteItems, ...transactionItems]
-      .sort(
-        (a, b) =>
-          new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime(),
-      )
-      .slice(0, 6);
-  }, [activeTransactions, notes, format]);
 
   const monthlySpendingData = useMemo(() => {
     const monthlyData: { [key: string]: number } = {};
@@ -180,7 +140,6 @@ export default function DashboardPage() {
       { Metric: "Total Expenses", Value: format(totalExpenses) },
       { Metric: "Average Expense", Value: format(averageExpense) },
       { Metric: "Total Notes", Value: totalNotes },
-      { Metric: "Active Users", Value: activeUsers },
       { Metric: "Total Transactions", Value: transactions.length },
     ];
     exportToExcel(dashboardData, "dashboard-summary.xlsx");
@@ -191,7 +150,6 @@ export default function DashboardPage() {
       { Metric: "Total Expenses", Value: format(totalExpenses) },
       { Metric: "Average Expense", Value: format(averageExpense) },
       { Metric: "Total Notes", Value: totalNotes },
-      { Metric: "Active Users", Value: activeUsers },
       { Metric: "Total Transactions", Value: transactions.length },
     ];
     exportToCSV(dashboardData, "dashboard-summary.csv");
@@ -216,14 +174,6 @@ export default function DashboardPage() {
 
         totalNotes,
 
-        activeUsers,
-
-        pendingUsers: pendingUsers.length,
-
-        workspaceAllocation,
-
-        workspaceRemaining,
-
         categorySpendingData,
 
         transferCount,
@@ -238,15 +188,6 @@ export default function DashboardPage() {
       "dashboard-summary.pdf",
     );
   };
-  const isAdminView = currentRole === "owner";
-
-  const handleSupportAction = (label: string) => {
-    addNotification({
-      message: `${label} is ready for deeper backend tooling.`,
-      type: "info",
-    });
-  };
-
   return (
     <motion.div
       initial={{ opacity: 0, y: 15 }}
@@ -327,312 +268,7 @@ export default function DashboardPage() {
           <AlertTitle className="font-bold">Error loading Dashboard</AlertTitle>
           <AlertDescription className="text-xs">{error}</AlertDescription>
         </Alert>
-      ) : isAdminView ? (
-        <div
-          id="dashboard-content"
-          className="grid grid-cols-1 xl:grid-cols-12 gap-6 md:gap-8 items-start"
-        >
-          {/* Workspace Summary */}
-          <div className="xl:col-span-12 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
-            <Card className="card-gradient border-none p-5">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-[10px] font-bold text-black/40 uppercase tracking-wider">
-                    Workspace Health
-                  </p>
-                  <p className="text-2xl font-black text-black mt-2">
-                    {format(workspaceAllocation)}
-                  </p>
-                  <p className="text-[10px] font-semibold text-black/40 mt-2">
-                    Estimated runway {format(workspaceRemaining)}
-                  </p>
-                </div>
-                <div className="w-10 h-10 rounded-full bg-black/5 flex items-center justify-center">
-                  <Briefcase className="w-5 h-5 text-black/60" />
-                </div>
-              </div>
-            </Card>
-            <Card className="card-gradient border-none p-5">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-[10px] font-bold text-black/40 uppercase tracking-wider">
-                    Total Expenses
-                  </p>
-                  <p className="text-2xl font-black text-black mt-2">
-                    {format(totalActiveExpenses)}
-                  </p>
-                  <p className="text-[10px] font-semibold text-black/40 mt-2">
-                    {activeTransactions.length} transactions
-                  </p>
-                </div>
-                <div className="w-10 h-10 rounded-full bg-black/5 flex items-center justify-center">
-                  <Activity className="w-5 h-5 text-black/60" />
-                </div>
-              </div>
-            </Card>
-            <Card className="card-gradient border-none p-5">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-[10px] font-bold text-black/40 uppercase tracking-wider">
-                    Active Members
-                  </p>
-                  <p className="text-2xl font-black text-black mt-2">
-                    {activeUsers}
-                  </p>
-                  <p className="text-[10px] font-semibold text-black/40 mt-2">
-                    {pendingUsers.length} needs support
-                  </p>
-                </div>
-                <div className="w-10 h-10 rounded-full bg-black/5 flex items-center justify-center">
-                  <Users className="w-5 h-5 text-black/60" />
-                </div>
-              </div>
-            </Card>
-            <Card className="card-gradient border-none p-5">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-[10px] font-bold text-black/40 uppercase tracking-wider">
-                    Transfers
-                  </p>
-                  <p className="text-2xl font-black text-black mt-2">
-                    {transferCount}
-                  </p>
-                  <p className="text-[10px] font-semibold text-black/40 mt-2">
-                    Across active activity
-                  </p>
-                </div>
-                <div className="w-10 h-10 rounded-full bg-black/5 flex items-center justify-center">
-                  <ClipboardList className="w-5 h-5 text-black/60" />
-                </div>
-              </div>
-            </Card>
-          </div>
-
-          {/* Financial Overview */}
-          <div className="xl:col-span-7 flex flex-col gap-6 md:gap-8">
-            <CategoryChart data={categorySpendingData} />
-            <TransactionChart data={monthlySpendingData} />
-          </div>
-
-          {/* Activity Feed */}
-          <div className="xl:col-span-5 flex flex-col gap-6 md:gap-8">
-            <Card className="card-gradient border-none p-6">
-              <CardHeader className="p-0 mb-4 flex flex-row items-center justify-between">
-                <CardTitle className="text-base font-bold text-black tracking-tight">
-                  Activity Feed
-                </CardTitle>
-                <Activity className="w-4 h-4 text-black/40" />
-              </CardHeader>
-              <CardContent className="p-0">
-                {recentActivity.length === 0 ? (
-                  <div className="text-xs text-black/45 font-semibold">
-                    No recent activity yet.
-                  </div>
-                ) : (
-                  <div className="flex flex-col gap-3">
-                    {recentActivity.map((item, index) => (
-                      <div
-                        key={`${item.type}-${index}`}
-                        className="flex items-center justify-between text-xs"
-                      >
-                        <div>
-                          <p className="font-semibold text-black">
-                            {item.title}
-                          </p>
-                          <p className="text-[10px] text-black/40">
-                            {item.meta}
-                          </p>
-                        </div>
-                        <span className="text-[10px] text-black/40">
-                          {new Date(item.timestamp).toLocaleDateString()}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-
-            <Card className="card-gradient border-none p-6">
-              <CardHeader className="p-0 mb-4 flex flex-row items-center justify-between">
-                <CardTitle className="text-base font-bold text-black tracking-tight">
-                  Support Snapshot
-                </CardTitle>
-                <UserCog className="w-4 h-4 text-black/40" />
-              </CardHeader>
-              <CardContent className="p-0 flex flex-col gap-3">
-                <div className="flex items-center justify-between text-xs">
-                  <span className="font-semibold text-black">
-                    Active members
-                  </span>
-                  <span className="font-black text-black">{activeUsers}</span>
-                </div>
-                <div className="flex items-center justify-between text-xs">
-                  <span className="font-semibold text-black">
-                    Accounts needing support
-                  </span>
-                  <span className="font-black text-black">
-                    {pendingUsers.length}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between text-xs">
-                  <span className="font-semibold text-black">Total notes</span>
-                  <span className="font-black text-black">{totalNotes}</span>
-                </div>
-                <div className="flex items-center justify-between text-xs">
-                  <span className="font-semibold text-black">
-                    Archived activity
-                  </span>
-                  <span className="font-black text-black">
-                    {archivedTransactions.length + archivedNotes}
-                  </span>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Pending Actions */}
-          <div className="xl:col-span-4 flex flex-col gap-6">
-            <Card className="card-gradient border-none p-6">
-              <CardHeader className="p-0 mb-4">
-                <CardTitle className="text-base font-bold text-black tracking-tight">
-                  Quiet Controls
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="p-0 flex flex-col gap-3 text-xs">
-                <div className="flex items-center justify-between">
-                  <span className="font-semibold text-black">
-                    Account checks
-                  </span>
-                  <span className="font-black text-black">
-                    {pendingUsers.length}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="font-semibold text-black">
-                    Archive review
-                  </span>
-                  <span className="font-black text-black">
-                    {archivedTransactions.length + archivedNotes}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="font-semibold text-black">
-                    Transfer monitoring
-                  </span>
-                  <span className="font-black text-black">{transferCount}</span>
-                </div>
-              </CardContent>
-            </Card>
-            <Card className="card-gradient border-none p-6">
-              <CardHeader className="p-0 mb-4">
-                <CardTitle className="text-base font-bold text-black tracking-tight">
-                  Support Actions
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="p-0 grid grid-cols-1 gap-2">
-                <Button
-                  onClick={() => handleSupportAction("Account support")}
-                  className="button-gradient h-10 text-xs"
-                >
-                  Account support
-                </Button>
-                <Button
-                  onClick={() => handleSupportAction("Category hygiene")}
-                  className="button-gradient h-10 text-xs"
-                >
-                  Category hygiene
-                </Button>
-                <Button
-                  onClick={() => handleSupportAction("Review archives")}
-                  className="button-gradient h-10 text-xs"
-                >
-                  Review archives
-                </Button>
-                <Button
-                  onClick={() => handleSupportAction("Emergency controls")}
-                  className="button-gradient h-10 text-xs"
-                >
-                  Emergency controls
-                </Button>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Recent Transfers */}
-          <div className="xl:col-span-4 flex flex-col gap-6">
-            <Card className="card-gradient border-none p-6">
-              <CardHeader className="p-0 mb-4">
-                <CardTitle className="text-base font-bold text-black tracking-tight">
-                  Recent Transfers
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="p-0">
-                {activeTransactions.filter(
-                  (t) => t.category.toLowerCase() === "transfer",
-                ).length === 0 ? (
-                  <div className="text-xs text-black/45 font-semibold">
-                    No transfers recorded.
-                  </div>
-                ) : (
-                  <div className="flex flex-col gap-3">
-                    {activeTransactions
-                      .filter((t) => t.category.toLowerCase() === "transfer")
-                      .slice(0, 5)
-                      .map((transfer) => (
-                        <div
-                          key={transfer.id}
-                          className="flex items-center justify-between text-xs"
-                        >
-                          <div>
-                            <p className="font-semibold text-black">
-                              {transfer.title}
-                            </p>
-                            <p className="text-[10px] text-black/40">
-                              {new Date(transfer.date).toLocaleDateString()}
-                            </p>
-                          </div>
-                          <span className="font-black text-black">
-                            {format(transfer.amount)}
-                          </span>
-                        </div>
-                      ))}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Archive Overview */}
-          <div className="xl:col-span-4 flex flex-col gap-6">
-            <Card className="card-gradient border-none p-6">
-              <CardHeader className="p-0 mb-4 flex flex-row items-center justify-between">
-                <CardTitle className="text-base font-bold text-black tracking-tight">
-                  Archive Overview
-                </CardTitle>
-                <Archive className="w-4 h-4 text-black/40" />
-              </CardHeader>
-              <CardContent className="p-0 flex flex-col gap-3 text-xs">
-                <div className="flex items-center justify-between">
-                  <span className="font-semibold text-black">
-                    Archived transactions
-                  </span>
-                  <span className="font-black text-black">
-                    {archivedTransactions.length}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="font-semibold text-black">
-                    Archived notes
-                  </span>
-                  <span className="font-black text-black">{archivedNotes}</span>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        </div>
       ) : (
-        /* 2. THREE-COLUMN MEMBER DASHBOARD GRID */
         <div
           id="dashboard-content"
           className="grid grid-cols-1 lg:grid-cols-12 gap-6 md:gap-8 items-start"
@@ -1032,7 +668,6 @@ function QuickTransfer({
                 <Sliders className="w-3.5 h-3.5" />
               </button>
             )}
-            <Sparkles className="w-4 h-4 text-black opacity-35" />
           </div>
         </CardHeader>
 
@@ -1040,9 +675,7 @@ function QuickTransfer({
           {!hasSetup ? (
             /* First-Time State */
             <div className="flex flex-col items-center justify-center py-6 text-center gap-4">
-              <div className="w-12 h-12 rounded-2xl bg-black/[0.03] border border-black/5 flex items-center justify-center text-black/40">
-                <Sparkles className="w-6 h-6" />
-              </div>
+              <div className="w-12 h-12 rounded-2xl bg-black/[0.03] border border-black/5 flex items-center justify-center text-black/40" />
               <div>
                 <h4 className="text-xs font-black text-black">No shortcuts defined</h4>
                 <p className="text-[10px] text-black/45 font-semibold mt-1 leading-relaxed max-w-[200px]">
