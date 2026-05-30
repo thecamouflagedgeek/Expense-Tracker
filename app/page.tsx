@@ -218,6 +218,11 @@ export default function LandingPage() {
           </div>
 
           {/* Mobile Menu Button */}
+          <Link href="/login">
+            <span className="text-sm font-semibold text-black/70 dark:text-white/70 hover:text-black dark:hover:text-white transition-colors py-2.5 px-4 cursor-pointer">
+              Log in
+            </span>
+          </Link>
           <button
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
             className="md:hidden p-2 text-black/70 dark:text-white/80 hover:text-black dark:hover:text-white focus:outline-none"
@@ -268,12 +273,6 @@ export default function LandingPage() {
             </nav>
             <div className="h-px bg-black/5 dark:bg-white/5 my-2" />
             <div className="flex flex-col gap-3">
-              {/* Mobile-only Login Button inside the mobile navigation overlay */}
-              <Link href="/login" onClick={() => setIsMobileMenuOpen(false)}>
-                <span className="block w-full text-center bg-[#ccff00] text-black font-bold py-3 rounded-full text-sm hover:bg-white hover:shadow-[0_0_15px_rgba(204,255,0,0.4)] transition-all cursor-pointer">
-                  Log in
-                </span>
-              </Link>
               <button
                 type="button"
                 onClick={toggleTheme}
@@ -315,7 +314,7 @@ export default function LandingPage() {
             <div className="mt-8 flex flex-col sm:flex-row gap-4 w-full sm:w-auto">
               <Link href="/login">
                 <button className="bg-[#ccff00] text-black hover:bg-white hover:shadow-[0_0_30px_rgba(204,255,0,0.4)] hover:scale-105 active:scale-95 transition-all duration-300 font-bold text-sm py-4 px-8 rounded-full shadow-[0_4px_25px_rgba(204,255,0,0.25)] flex items-center justify-center gap-2">
-                  Login <ArrowRight className="w-4 h-4 stroke-[3]" />
+                  Start saving free <ArrowRight className="w-4 h-4 stroke-[3]" />
                 </button>
               </Link>
             </div>
