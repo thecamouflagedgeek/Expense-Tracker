@@ -17,13 +17,12 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { useTransactions } from "@/context/transaction-context"
 import { useCurrency } from "@/context/currency-context"
-import { Loader2 } from "lucide-react"
+import { Loader2, ChevronDown, Pencil, Check, X, CalendarIcon } from "lucide-react"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { CalendarIcon } from "lucide-react"
 import { Calendar } from "@/components/ui/calendar"
 import { format } from "date-fns"
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList, CommandSeparator } from "@/components/ui/command"
 
 type EditTransactionModalProps = {
   isOpen: boolean
@@ -33,8 +32,7 @@ type EditTransactionModalProps = {
 
 export function EditTransactionModal({ isOpen, onClose, transaction }: EditTransactionModalProps) {
   const { symbol, convert, convertToINR, currency } = useCurrency()
-  const { updateTransaction, categories } = useTransactions()
-  const availableCategories = categories.includes("Transfer") ? categories : [...categories, "Transfer"]
+  const { updateTransaction, categories, renameCategory } = useTransactions()
 
   // Convert stored base INR amount to the active currency for display
   const toDisplayAmount = (inrAmount: number) =>
@@ -45,12 +43,40 @@ export function EditTransactionModal({ isOpen, onClose, transaction }: EditTrans
     transaction?.amount != null ? toDisplayAmount(transaction.amount).toFixed(2) : ""
   )
   const [category, setCategory] = useState(transaction?.category || "")
+  const [categoryOpen, setCategoryOpen] = useState(false)
+  const [categorySearch, setCategorySearch] = useState("")
   const [date, setDate] = useState<Date | undefined>(
     transaction?.date ? new Date(transaction.date) : undefined
   )
   const [description, setDescription] = useState(transaction?.description || "")
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [editingCat, setEditingCat] = useState<string | null>(null)
+  const [editCatName, setEditCatName] = useState("")
+
+  const handleRenameCategory = async (oldName: string) => {
+    try {
+      setError(null)
+      await renameCategory(oldName, editCatName)
+      if (category === oldName) {
+        setCategory(editCatName.trim())
+      }
+      setEditingCat(null)
+    } catch (err: any) {
+      setError(err.message || "Failed to rename category.")
+    }
+  }
+
+  const availableCategories = Array.from(
+    new Set([...categories, "Transfer"].filter((categoryName) => categoryName && categoryName !== "New Category")),
+  )
+  const normalizedCategorySearch = categorySearch.trim().toLowerCase()
+  const filteredCategories = availableCategories.filter((categoryName) =>
+    categoryName.toLowerCase().includes(normalizedCategorySearch),
+  )
+  const canCreateCategory =
+    categorySearch.trim().length > 0 &&
+    !availableCategories.some((categoryName) => categoryName.toLowerCase() === normalizedCategorySearch)
 
   useEffect(() => {
     if (transaction) {
@@ -58,6 +84,7 @@ export function EditTransactionModal({ isOpen, onClose, transaction }: EditTrans
       // Re-convert whenever currency or transaction changes
       setAmount(toDisplayAmount(transaction.amount).toFixed(2))
       setCategory(transaction.category)
+      setCategorySearch(transaction.category)
       setDate(transaction.date ? new Date(transaction.date) : undefined)
       setDescription(transaction.description || "")
     }
@@ -148,18 +175,116 @@ export function EditTransactionModal({ isOpen, onClose, transaction }: EditTrans
               <Label htmlFor="category" className="text-right text-black/75 font-semibold text-xs">
                 Category
               </Label>
-              <Select value={category} onValueChange={setCategory} required>
-                <SelectTrigger className="col-span-3 bg-black/[0.02] border border-black/5 text-black hover:bg-black/[0.04] focus:bg-white focus:ring-2 focus:ring-black rounded-xl text-xs h-10">
-                  <SelectValue placeholder="Select a category" />
-                </SelectTrigger>
-                <SelectContent className="bg-white text-black border border-black/5 rounded-xl shadow-xl z-[999]">
-                  {availableCategories.map((cat) => (
-                    <SelectItem key={cat} value={cat} className="hover:bg-black/5 focus:bg-black/5 cursor-pointer font-semibold text-xs py-2 px-3">
-                      {cat}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Popover
+                open={categoryOpen}
+                onOpenChange={(open) => {
+                  setCategoryOpen(open)
+                  if (open) {
+                    setCategorySearch(category)
+                  }
+                }}
+              >
+                <PopoverTrigger asChild>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="col-span-3 justify-between bg-black/[0.02] border border-black/5 text-black hover:bg-black/[0.04] focus:bg-white focus:ring-2 focus:ring-black rounded-xl text-xs h-10 font-normal"
+                  >
+                    <span className={`truncate ${!category ? "text-black/40" : "text-black"}`}>
+                      {category || "Select or type a category"}
+                    </span>
+                    <ChevronDown className="ml-2 h-4 w-4 text-black/40" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0 bg-white border border-black/5 rounded-2xl shadow-2xl z-[999]">
+                  <Command shouldFilter={false}>
+                    <CommandInput
+                      value={categorySearch}
+                      onValueChange={setCategorySearch}
+                      placeholder="Type a category"
+                    />
+                    <CommandList>
+                      <CommandEmpty>No category found.</CommandEmpty>
+                      <CommandGroup heading="Categories">
+                        {filteredCategories.map((cat) => (
+                          <CommandItem
+                            key={cat}
+                            value={cat}
+                            onSelect={() => {
+                              if (editingCat === cat) return
+                              setCategory(cat)
+                              setCategorySearch(cat)
+                              setCategoryOpen(false)
+                            }}
+                            className="flex items-center justify-between cursor-pointer font-semibold text-xs py-2 px-3 group"
+                          >
+                            {editingCat === cat ? (
+                              <div className="flex items-center gap-1.5 w-full" onClick={(e) => e.stopPropagation()}>
+                                <input
+                                  type="text"
+                                  value={editCatName}
+                                  onChange={(e) => setEditCatName(e.target.value)}
+                                  className="flex-1 bg-black/[0.04] border border-black/10 px-2 py-0.5 rounded text-[11px] font-semibold text-black focus:outline-none focus:ring-1 focus:ring-black"
+                                  autoFocus
+                                />
+                                <button
+                                  type="button"
+                                  onClick={() => handleRenameCategory(cat)}
+                                  className="p-1 text-emerald-600 hover:text-emerald-700 bg-emerald-50 hover:bg-emerald-100 rounded"
+                                >
+                                  <Check className="w-3 h-3" />
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => setEditingCat(null)}
+                                  className="p-1 text-red-600 hover:text-red-700 bg-red-50 hover:bg-red-100 rounded"
+                                >
+                                  <X className="w-3 h-3" />
+                                </button>
+                              </div>
+                            ) : (
+                              <>
+                                <span className="truncate">{cat}</span>
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation()
+                                    setEditingCat(cat)
+                                    setEditCatName(cat)
+                                  }}
+                                  className="opacity-0 group-hover:opacity-100 p-1 text-black/40 hover:text-black hover:bg-black/5 rounded transition-opacity"
+                                >
+                                  <Pencil className="w-3 h-3" />
+                                </button>
+                              </>
+                            )}
+                          </CommandItem>
+                        ))}
+                      </CommandGroup>
+                      {canCreateCategory && (
+                        <>
+                          <CommandSeparator />
+                          <CommandGroup heading="Create new">
+                            <CommandItem
+                              key={`create-${categorySearch.trim()}`}
+                              value={categorySearch.trim()}
+                              onSelect={() => {
+                                const nextCategory = categorySearch.trim()
+                                setCategory(nextCategory)
+                                setCategorySearch(nextCategory)
+                                setCategoryOpen(false)
+                              }}
+                              className="cursor-pointer font-semibold text-xs py-2 px-3 text-emerald-700"
+                            >
+                              + Add "{categorySearch.trim()}"
+                            </CommandItem>
+                          </CommandGroup>
+                        </>
+                      )}
+                    </CommandList>
+                  </Command>
+                </PopoverContent>
+              </Popover>
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="date" className="text-right text-black/75 font-semibold text-xs">

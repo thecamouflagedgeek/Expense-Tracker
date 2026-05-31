@@ -4,7 +4,7 @@ import type React from "react"
 import { createContext, useState, useEffect, useContext } from "react"
 import { useAuth } from "@/contexts/auth-context"
 import { useNotification } from "@/contexts/notification-context"
-import { addDoc, collection, deleteDoc, doc, getDoc, onSnapshot, query, updateDoc, where } from "firebase/firestore"
+import { addDoc, collection, deleteDoc, doc, getDoc, getDocs, onSnapshot, query, updateDoc, where, writeBatch } from "firebase/firestore"
 import { db } from "@/lib/firebase"
 
 export type Transaction = {
@@ -27,6 +27,7 @@ type TransactionContextType = {
   addTransaction: (transaction: Omit<Transaction, "id" | "userId">) => Promise<void>
   updateTransaction: (id: string, updatedFields: Partial<Omit<Transaction, "id" | "userId">>) => Promise<void>
   deleteTransaction: (id: string) => Promise<void>
+  renameCategory: (oldName: string, newName: string) => Promise<void>
 }
 
 export const TransactionContext = createContext<TransactionContextType | undefined>(undefined)
@@ -195,6 +196,56 @@ export const TransactionProvider: React.FC<{ children: React.ReactNode }> = ({ c
     }
   }
 
+  const renameCategory = async (oldName: string, newName: string) => {
+    if (!user) {
+      const error = "User not authenticated"
+      setError(error)
+      addNotification({ message: error, type: "error" })
+      throw new Error(error)
+    }
+
+    const trimmedOld = oldName.trim()
+    const trimmedNew = newName.trim()
+
+    if (!trimmedOld || !trimmedNew) {
+      throw new Error("Category names cannot be empty")
+    }
+
+    if (trimmedOld === trimmedNew) {
+      return
+    }
+
+    try {
+      const q = query(
+        collection(db, "transactions"),
+        where("userId", "==", user.id),
+        where("category", "==", trimmedOld)
+      )
+
+      const querySnapshot = await getDocs(q)
+      const batch = writeBatch(db)
+
+      querySnapshot.forEach((docSnap) => {
+        batch.update(docSnap.ref, {
+          category: trimmedNew,
+          updatedAt: new Date().toISOString(),
+        })
+      })
+
+      await batch.commit()
+
+      addNotification({
+        message: `Category "${trimmedOld}" successfully renamed to "${trimmedNew}"!`,
+        type: "success",
+      })
+    } catch (err: any) {
+      const errorMessage = err.message || "Failed to rename category"
+      setError(errorMessage)
+      addNotification({ message: errorMessage, type: "error" })
+      throw err
+    }
+  }
+
   const contextValue = {
     transactions,
     categories,
@@ -203,6 +254,7 @@ export const TransactionProvider: React.FC<{ children: React.ReactNode }> = ({ c
     addTransaction,
     updateTransaction,
     deleteTransaction,
+    renameCategory,
   }
 
   return <TransactionContext.Provider value={contextValue}>{children}</TransactionContext.Provider>
