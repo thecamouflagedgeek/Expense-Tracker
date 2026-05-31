@@ -42,7 +42,7 @@ export function Navigation() {
 
   const handleLogout = async () => {
     await logout()
-    router.push("/login")
+    router.push("/")
   }
 
   const handleSettingsAction = (label: string) => {
