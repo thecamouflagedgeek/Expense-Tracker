@@ -982,18 +982,6 @@ export default function LandingPage() {
           </>
         )}
 
-        {/* ========================================================================= */}
-        {/* CUSTOMIZATION GUIDE FOR USER (DEON):                                      */}
-        {/*                                                                           */}
-        {/* 1. GIF OPACITY: Adjust the "opacity" value in the style tag of the        */}
-        {/*    background <img> below. Current: 0.85 in light, 0.58 in dark.          */}
-        {/* 2. RADIAL BACKGROUND FADE: Change the percentages in the background       */}
-        {/*    radial-gradient overlay. A higher transparent percentage lets more    */}
-        {/*    of the center play clearly.                                            */}
-        {/* 3. CARD SIZE: Modify the "max-w-[580px]" or padding in the card container.  */}
-        {/* ========================================================================= */}
-
-        {/* Dynamic Background GIF Layer (Full Color, NO Grayscale, High Visibility) */}
         {teamMembers.map((member) => (
           activeMember === member.id && (
             <motion.div
