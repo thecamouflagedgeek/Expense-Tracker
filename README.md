@@ -46,6 +46,7 @@ The application allows users to manage their transactional history, document cri
 
 ### Financial Education
 * **Educational Modules:** An integrated learning repository compiling essential personal finance strategies, budgeting guides, and compounding tutorials.
+* **Learn More Panels:** In-context explainer panels that expand each topic with short lessons and actionable tips.
 
 ### User Preferences
 * **Tailored Personalization:** Real-time theme provider supporting smooth Dark Mode and Light Mode switching.
@@ -138,6 +139,10 @@ Upon transactional changes, aggregation engines compile historical values in the
 ![Notes Workspace Placeholder](./public/note.png)  
 *Integrated personal financial editor supporting tag management and quick reminders.*
 
+### Learn More
+![Learn More View](./public/learnmore.png)  
+*Expanded learning panel with focused guidance and next-step actions for each finance topic.Click learn more*
+
 ---
 
 ## Installation
@@ -190,7 +195,7 @@ Contributions are welcome! Please follow these steps to contribute:
    ```
 3. **Commit Your Changes:**
    ```bash
-   git commit -m "feat: add some amazing feature"
+   git commit -m "feat: here to contribute a feature"
    ```
 4. **Push to Your Branch:**
    ```bash
