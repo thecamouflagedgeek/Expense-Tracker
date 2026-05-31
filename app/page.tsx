@@ -76,26 +76,26 @@ interface TeamMember {
 
 const teamMembers: TeamMember[] = [
   {
-    id: "deon",
-    name: "Deon",
-    role: "Product + Frontend",
-    image: "/deon1.png",
-    gif: "/deon4.gif",
-    bio: "Crafting modern, beautiful, and interactive user interfaces for CtrlFund. Passionate about clean code, high-performance animations, and pixel-perfect design systems.",
-    tags: ["UI", "Exports", "Frontend", "Motion"],
+   id: "deon",
+  name: "Deon",
+  role: "Frontend Engineering & Product Development",
+  image: "/deon1.png",
+  gif: "/deon4.gif",
+  bio: "Contributed to the application's frontend architecture, user experience, and core product workflows. Built and refined major interface components, transaction management experiences, navigation, routing, exports, and interactive UI elements while collaborating on product and design decisions throughout development.",
+  tags: ["Frontend", "Product", "UI/UX", "Routing"],
     socials: {
       github: "https://github.com/deonraj",
       linkedin: "https://www.linkedin.com/in/deon-raj-50b495330/",
     }
   },
   {
-    id: "hazel",
-    name: "Hazel",
-    role: "Backend + Data",
-    image: "/hazel_image.jpeg",
-    gif: "/hazel1.gif",
-    bio: "Architecting secure, robust, and highly scalable data endpoints and storage systems. Specializing in secure user authentication, optimized databases, and seamless backups.",
-    tags: ["Auth", "Storage", "Backend", "Database"],
+  id: "hazel",
+  name: "Hazel",
+  role: "Platform Engineering & Application Systems",
+  image: "/hazel_image.jpeg",
+  gif: "/hazel1.gif",
+  bio: "Contributed to authentication, Firebase integration, data management, application stability, and user-facing experiences. Worked on platform functionality, routing improvements, educational content features, and design contributions that helped shape the overall application experience.",
+  tags: ["Firebase", "Authentication", "Data", "Platform"],
     socials: {
       github: "https://github.com/thecamouflagedgeek",
       linkedin: "https://www.linkedin.com/in/hazel-sequeira-57634634a/",
@@ -104,8 +104,20 @@ const teamMembers: TeamMember[] = [
 ];
 
 export default function LandingPage() {
+  const dayBars = [
+    { day: "Mon", height: "45%" },
+    { day: "Tue", height: "75%" },
+    { day: "Wed", height: "55%" },
+    { day: "Thu", height: "80%" },
+    { day: "Fri", height: "40%" },
+    { day: "Sat", height: "95%" },
+    { day: "Sun", height: "50%" },
+  ];
+
+  const dayOrder = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"] as const;
   const [activeFeature, setActiveFeature] = useState<FeatureKey>("transactions");
   const [activeMember, setActiveMember] = useState<"deon" | "hazel">("deon");
+  const [activeDay, setActiveDay] = useState(() => dayOrder[new Date().getDay()]);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [showDemoVideo, setShowDemoVideo] = useState(false);
   const [isThemeReady, setIsThemeReady] = useState(false);
@@ -371,34 +383,40 @@ export default function LandingPage() {
               {/* Mockup Animated Bar Chart */}
               <div className="pt-8 pb-4">
                 <div className="flex justify-between items-end h-[160px] gap-2.5 px-2">
-                  {[
-                    { day: "Mon", height: "45%" },
-                    { day: "Tue", height: "35%" },
-                    { day: "Wed", height: "55%" },
-                    { day: "Thu", height: "80%", active: true },
-                    { day: "Fri", height: "40%" },
-                    { day: "Sat", height: "65%" },
-                    { day: "Sun", height: "50%" },
-                  ].map((bar, i) => (
-                    <div key={i} className="flex flex-col items-center flex-1 group/bar cursor-pointer">
-                      <div className="w-full relative bg-black/5 dark:bg-white/5 rounded-t-lg overflow-hidden h-[120px] flex items-end">
-                        {/* Animated Fill */}
-                        <motion.div
-                          initial={{ height: 0 }}
-                          animate={{ height: bar.height }}
-                          transition={{ delay: 0.3 + i * 0.1, duration: 0.8, ease: "easeOut" }}
-                          className={`w-full rounded-t-md transition-all duration-300 ${bar.active
-                            ? "bg-[#ccff00] shadow-[0_0_15px_rgba(204,255,0,0.6)]"
-                            : "bg-white/15 group-hover/bar:bg-white/30"
+                  {dayBars.map((bar, i) => {
+                    const isActive = bar.day === activeDay;
+
+                    return (
+                      <button
+                        key={bar.day}
+                        type="button"
+                        onClick={() => setActiveDay(bar.day)}
+                        aria-pressed={isActive}
+                        className="flex flex-col items-center flex-1 group/bar cursor-pointer bg-transparent p-0 border-0"
+                      >
+                        <div className="w-full relative bg-black/5 dark:bg-white/5 rounded-t-lg overflow-hidden h-[120px] flex items-end">
+                          {/* Animated Fill */}
+                          <motion.div
+                            initial={{ height: 0 }}
+                            animate={{ height: bar.height }}
+                            transition={{ delay: 0.3 + i * 0.1, duration: 0.8, ease: "easeOut" }}
+                            className={`w-full rounded-t-md transition-all duration-300 ${isActive
+                              ? "bg-[#ccff00] shadow-[0_0_15px_rgba(204,255,0,0.6)]"
+                              : "bg-white/15 group-hover/bar:bg-white/30"
+                              }`}
+                          />
+                        </div>
+                        <span
+                          className={`text-[10px] font-bold mt-2.5 transition-colors ${isActive
+                            ? "text-[#ccff00]"
+                            : "text-black/40 dark:text-white/40 group-hover/bar:text-black/80 dark:group-hover/bar:text-white/80"
                             }`}
-                        />
-                      </div>
-                      <span className={`text-[10px] font-bold mt-2.5 transition-colors ${bar.active ? "text-[#ccff00]" : "text-black/40 dark:text-white/40 group-hover/bar:text-black/80 dark:group-hover/bar:text-white/80"
-                        }`}>
-                        {bar.day}
-                      </span>
-                    </div>
-                  ))}
+                        >
+                          {bar.day}
+                        </span>
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
 
