@@ -23,7 +23,7 @@ export function ProtectedRoute({ children }: { children: React.ReactNode }) {
 
     if (!user && !isPublicPath) {
       router.replace("/")
-    } else if (user && pathname === "/login") {
+    } else if (user && pathname === "/") {
       router.replace("/dashboard")
     }
   }, [user, loading, roleLoading, isPublicPath, pathname, router])
