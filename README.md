@@ -55,7 +55,7 @@ The application allows users to manage their transactional history, document cri
 
 ## Architecture
 
-![Transaction Management Flow Diagram](./Transaction%20Management-2026-05-30-184950.svg)
+![Transaction Management Flow Diagram](./public/Transaction%20Management-2026-05-30-184950.svg)
 
 > [!NOTE]
 > The diagram above models the transaction lifecycles, showing state flows between the UI components, React Context, and the real-time Firebase datastore.
@@ -127,15 +127,15 @@ Upon transactional changes, aggregation engines compile historical values in the
 ## Screenshots
 
 ### Dashboard
-![Dashboard Placeholder](./dashboard.png)  
+![Dashboard Placeholder](./public/dashboard.png)  
 *Dynamic dashboard interface containing analytics summaries, visual charts, and current activity history.*
 
 ### Transactions
-![Transactions Table Placeholder](./transaction.png)  
+![Transactions Table Placeholder](./public/transaction.png)  
 *Granular transaction lookup dashboard with rich filters, category badges, and export capabilities.*
 
 ### Notes
-![Notes Workspace Placeholder](./note.png)  
+![Notes Workspace Placeholder](./public/note.png)  
 *Integrated personal financial editor supporting tag management and quick reminders.*
 
 ---
