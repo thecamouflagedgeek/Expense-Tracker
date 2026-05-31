@@ -127,15 +127,15 @@ Upon transactional changes, aggregation engines compile historical values in the
 ## Screenshots
 
 ### Dashboard
-![Dashboard Placeholder](https://raw.githubusercontent.com/shadcn-ui/ui/main/apps/www/public/og.png)  
+![Dashboard Placeholder](./dashboard.png)  
 *Dynamic dashboard interface containing analytics summaries, visual charts, and current activity history.*
 
 ### Transactions
-![Transactions Table Placeholder](https://raw.githubusercontent.com/shadcn-ui/ui/main/apps/www/public/og.png)  
+![Transactions Table Placeholder](./transaction.png)  
 *Granular transaction lookup dashboard with rich filters, category badges, and export capabilities.*
 
 ### Notes
-![Notes Workspace Placeholder](https://raw.githubusercontent.com/shadcn-ui/ui/main/apps/www/public/og.png)  
+![Notes Workspace Placeholder](./note.png)  
 *Integrated personal financial editor supporting tag management and quick reminders.*
 
 ---
