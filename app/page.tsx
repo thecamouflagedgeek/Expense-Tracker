@@ -104,7 +104,10 @@ const teamMembers: TeamMember[] = [
 ];
 
 export default function LandingPage() {
-  const dayBars = [
+  const dayOrder = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"] as const;
+  type DayKey = (typeof dayOrder)[number];
+
+  const dayBars: { day: DayKey; height: string }[] = [
     { day: "Mon", height: "45%" },
     { day: "Tue", height: "75%" },
     { day: "Wed", height: "55%" },
@@ -113,11 +116,11 @@ export default function LandingPage() {
     { day: "Sat", height: "95%" },
     { day: "Sun", height: "50%" },
   ];
-
-  const dayOrder = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"] as const;
   const [activeFeature, setActiveFeature] = useState<FeatureKey>("transactions");
   const [activeMember, setActiveMember] = useState<"deon" | "hazel">("deon");
-  const [activeDay, setActiveDay] = useState(() => dayOrder[new Date().getDay()]);
+  const [activeDay, setActiveDay] = useState<DayKey>(
+    () => dayOrder[new Date().getDay()]
+  );
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [showDemoVideo, setShowDemoVideo] = useState(false);
   const [isThemeReady, setIsThemeReady] = useState(false);
@@ -305,7 +308,7 @@ export default function LandingPage() {
           <motion.div
             initial={{ opacity: 0, x: -30 }}
             animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.8, cubicBezier: [0.16, 1, 0.3, 1] }}
+            transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
             className="lg:col-span-6 flex flex-col items-start"
           >
 
@@ -359,7 +362,7 @@ export default function LandingPage() {
           <motion.div
             initial={{ opacity: 0, y: 40 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.9, delay: 0.1, cubicBezier: [0.16, 1, 0.3, 1] }}
+            transition={{ duration: 0.9, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
             className="lg:col-span-6 relative w-full flex justify-center"
           >
             {/* Ambient Background Circle Glow */}
@@ -1108,7 +1111,7 @@ export default function LandingPage() {
                     initial={{ opacity: 0, y: 30 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -30 }}
-                    transition={{ duration: 0.5, cubicBezier: [0.16, 1, 0.3, 1] }}
+                    transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
                     className="w-full max-w-[580px] bg-white/20 dark:bg-black/25 border border-white/55 dark:border-white/10 rounded-[32px] overflow-hidden shadow-2xl backdrop-blur-2xl p-6 md:p-8 flex flex-col md:flex-row items-center gap-6 md:gap-8 hover:border-[#82a400]/30 dark:hover:border-[#ccff00]/30 transition-all duration-300 group"
                   >
 

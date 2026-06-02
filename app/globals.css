@@ -301,82 +301,45 @@
 }
 
 @keyframes marquee {
-
-  0% {
-
-    transform: translateX(0%)
+  from {
+    transform: translateX(0);
   }
 
-  100% {
-
-    transform: translateX(-50%)
+  to {
+    transform: translateX(-50%);
   }
-
 }
 
 .animate-marquee {
-
-  animation: marquee 18s linear infinite;
-
+  display: flex;
   width: max-content;
+  animation: marquee 25s linear infinite;
+  will-change: transform;
+}
 
+.animate-marquee:hover {
+  animation-play-state: paused;
+}
+
+.carousel-mask {
+  mask-image: linear-gradient(
+    to right,
+    transparent,
+    black 10%,
+    black 90%,
+    transparent
+  );
+
+  -webkit-mask-image: linear-gradient(
+    to right,
+    transparent,
+    black 10%,
+    black 90%,
+    transparent
+  );
 }
 
 .pixelated {
   image-rendering: pixelated;
   image-rendering: crisp-edges;
-}
-
-@keyframes marquee {
-
-  0% {
-
-    transform: translateX(0)
-  }
-
-  100% {
-
-    transform: translateX(-50%)
-  }
-
-}
-
-.animate-marquee {
-
-  animation: marquee 25s linear infinite;
-
-}
-
-.animate-marquee-reverse {
-
-  animation: marquee 25s linear infinite reverse;
-
-}
-
-@keyframes bankScroll {
-
-  0% {
-
-    transform: translateX(0);
-
-  }
-
-  100% {
-
-    transform: translateX(-33.33%);
-
-  }
-
-}
-
-.animate-bank-scroll {
-
-  animation: bankScroll 30s linear infinite;
-
-}
-
-.animate-bank-scroll:hover {
-
-  animation-play-state: paused;
-
 }

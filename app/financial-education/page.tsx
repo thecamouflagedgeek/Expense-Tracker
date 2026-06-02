@@ -13,26 +13,14 @@ import {
 
 function InfiniteCarousel({ items }: { items: string[] }) {
   return (
-    <div className="relative overflow-hidden py-4">
-      {/* left fade */}
-
-      <div className="absolute left-0 top-0 bottom-0 z-10 w-24 bg-gradient-to-r from-[#f8f8f5] to-transparent" />
-
-      {/* right fade */}
-
-      <div className="absolute right-0 top-0 bottom-0 z-10 w-24 bg-gradient-to-l from-[#f8f8f5] to-transparent" />
-
-      <div className="flex w-max gap-5 animate-bank-scroll">
-        {[...items, ...items, ...items].map((item, index) => (
+    <div className="relative overflow-hidden carousel-mask">
+      <div className="animate-marquee flex w-max gap-5 whitespace-nowrap py-4">
+        {[...items, ...items].map((item, index) => (
           <div
             key={index}
-            className="group flex items-center gap-3 rounded-2xl border border-black/5 bg-white/80 backdrop-blur-lg px-6 py-4 shadow-md transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:border-[#ccff00]/50"
+            className="group px-6 py-3 rounded-full bg-white border border-black/5 shadow-sm font-black tracking-wide text-black/70 transition-all duration-300 hover:scale-105 hover:border-[#ccff00] hover:shadow-lg"
           >
-            <div className="h-3 w-3 rounded-full bg-[#ccff00] shadow-[0_0_15px_#ccff00]" />
-
-            <span className="font-black text-black whitespace-nowrap tracking-tight">
-              {item}
-            </span>
+            <span className="whitespace-nowrap">{item}</span>
           </div>
         ))}
       </div>
