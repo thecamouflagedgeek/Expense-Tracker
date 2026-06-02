@@ -72,7 +72,7 @@ export function TransactionItem({ transaction, showActions = true, children }: T
     <>
     <TableRow className={`border-black/5 hover:bg-black/[0.01] transition-colors ${transaction.isArchived ? "opacity-60" : ""}`}>
       <TableCell className="font-bold text-black tracking-tight">{transaction.title}</TableCell>
-      <TableCell className="text-black/55 text-xs font-medium">{transaction.description || "-"}</TableCell>
+      <TableCell className="text-black/55 text-xs font-medium hidden md:table-cell">{transaction.description || "-"}</TableCell>
       <TableCell>
         <span className={`text-[10px] font-bold px-2.5 py-1 rounded-full border ${getCategoryStyles(transaction.category)}`}>
           {transaction.category}
@@ -81,7 +81,7 @@ export function TransactionItem({ transaction, showActions = true, children }: T
       <TableCell className={`font-black text-sm ${transaction.type === "income" ? "text-emerald-600" : "text-red-600"}`}>
         {transaction.type === "income" ? "+" : "-"}{format(Math.abs(transaction.amount))}
       </TableCell>
-      <TableCell className="text-black/45 text-xs font-semibold">{formatDate(transaction.date)}</TableCell>
+      <TableCell className="text-black/45 text-xs font-semibold hidden sm:table-cell">{formatDate(transaction.date)}</TableCell>
       {showActions && (
         <TableCell className="text-right">
           <div className="flex justify-end space-x-1.5">

@@ -30,7 +30,7 @@ export function ClientProviders({ children }: { children: React.ReactNode }) {
                 ) : (
                   <div className="min-h-screen grid-bg-pattern font-sans antialiased text-[#0c0d0e] dark:text-white">
                     <Navigation />
-                    <main className="md:pl-28 pt-24 pr-4 md:pr-8 pb-24 md:pb-8 transition-all duration-300">
+                    <main className="px-4 md:pl-28 md:pr-8 pt-24 pb-24 md:pb-8 transition-all duration-300">
                       <ProtectedRoute>{children}</ProtectedRoute>
                     </main>
                   </div>

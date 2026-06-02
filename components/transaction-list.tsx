@@ -55,10 +55,10 @@ export function TransactionList({ transactions }: TransactionListProps) {
             <TableHeader className="sticky top-0 z-10 bg-[#eff1e9]">
               <TableRow className="border-black/5 hover:bg-transparent">
                 <TableHead className="text-black/45 font-bold text-[10px] uppercase tracking-wider">Title</TableHead>
-                <TableHead className="text-black/45 font-bold text-[10px] uppercase tracking-wider">Description</TableHead>
+                <TableHead className="text-black/45 font-bold text-[10px] uppercase tracking-wider hidden md:table-cell">Description</TableHead>
                 <TableHead className="text-black/45 font-bold text-[10px] uppercase tracking-wider">Category</TableHead>
                 <TableHead className="text-black/45 font-bold text-[10px] uppercase tracking-wider">Amount</TableHead>
-                <TableHead className="text-black/45 font-bold text-[10px] uppercase tracking-wider">Date</TableHead>
+                <TableHead className="text-black/45 font-bold text-[10px] uppercase tracking-wider hidden sm:table-cell">Date</TableHead>
                 {showActions && (
                   <TableHead className="text-black/45 font-bold text-[10px] uppercase tracking-wider text-right">Actions</TableHead>
                 )}

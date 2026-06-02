@@ -271,19 +271,19 @@ export default function DashboardPage() {
       ) : (
         <div
           id="dashboard-content"
-          className="grid grid-cols-1 lg:grid-cols-12 gap-6 md:gap-8 items-start"
+          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-6 md:gap-8 items-start"
         >
-          <div className="lg:col-span-4 flex flex-col gap-6 md:gap-8">
+          <div className="md:col-span-1 lg:col-span-4 flex flex-col gap-6 md:gap-8">
             <CardWidget totalExpenses={totalActiveExpenses} />
             <RecentTransactions />
           </div>
 
-          <div className="lg:col-span-5 flex flex-col gap-6 md:gap-8">
+          <div className="md:col-span-1 lg:col-span-5 flex flex-col gap-6 md:gap-8">
             <CategoryChart data={categorySpendingData} />
             <TransactionChart data={monthlySpendingData} />
           </div>
 
-          <div className="lg:col-span-3 flex flex-col gap-6 md:gap-8">
+          <div className="md:col-span-2 lg:col-span-3 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-1 gap-6 md:gap-8">
             <QuickTransfer
               availableBalanceInINR={Math.max(
                 0,
