@@ -1,6 +1,7 @@
-import { db } from "@/lib/firebase"
-import { doc, getDoc, setDoc, Timestamp, collection, query, where, onSnapshot, updateDoc, deleteDoc } from "firebase/firestore"
-import { UploadLink, PendingReceipt } from "./types"
+import { db, storage } from "@/lib/firebase"
+import { doc, getDoc, setDoc, Timestamp, collection, addDoc } from "firebase/firestore"
+import { ref, uploadBytes, getDownloadURL } from "firebase/storage"
+import { UploadLink } from "./types"
 
 function getLocalLinks(): Record<string, any> {
   if (typeof window === "undefined") return {}
@@ -17,20 +18,6 @@ function saveLocalLink(linkId: string, linkData: any) {
     expiresAt: linkData.expiresAt.toMillis(),
   }
   localStorage.setItem("ctrlfund_upload_links", JSON.stringify(links))
-}
-
-function getLocalPendingReceipts(): Record<string, any> {
-  if (typeof window === "undefined") return {}
-  const data = localStorage.getItem("ctrlfund_pending_receipts")
-  return data ? JSON.parse(data) : {}
-}
-
-function saveLocalPendingReceipt(receiptId: string, data: any) {
-  if (typeof window === "undefined") return
-  const receipts = getLocalPendingReceipts()
-  receipts[receiptId] = data
-  localStorage.setItem("ctrlfund_pending_receipts", JSON.stringify(receipts))
-  window.dispatchEvent(new Event("pending-receipts-updated"))
 }
 
 export async function generateReceiptUploadLink(userId: string) {
@@ -56,7 +43,7 @@ export async function generateReceiptUploadLink(userId: string) {
     fallback = true
   }
   const origin = typeof window !== "undefined" ? window.location.origin : ""
-  const uploadUrl = `${origin}/receipt-upload/${linkId}`
+  const uploadUrl = `${origin}/upload/${linkId}`
   return {
     linkId,
     uploadUrl,
@@ -107,106 +94,70 @@ export async function validateUploadLink(linkId: string): Promise<{ valid: boole
   return { valid: false }
 }
 
-export async function createPendingReceipt(receipt: Omit<PendingReceipt, "status">) {
-  const data: PendingReceipt = {
-    ...receipt,
-    status: "pending",
-  }
-  let fallback = false
-  try {
-    const ref = doc(db, "pendingReceipts", data.id)
-    await setDoc(ref, data)
-  } catch (error) {
-    saveLocalPendingReceipt(data.id, data)
-    fallback = true
-  }
-  return { id: data.id, fallback }
-}
+export async function uploadReceiptToFirebase(
+  ownerId: string,
+  linkId: string,
+  file: File,
+  description: string
+) {
+  const fileExtension = file.name.includes(".") ? file.name.substring(file.name.lastIndexOf(".")) : ""
+  const generatedFileName = `${crypto.randomUUID()}${fileExtension}`
+  
+  let receiptUrl = ""
+  let fallbackUsed = false
+  let fileBase64 = ""
 
-export function subscribePendingReceipts(ownerId: string, callback: (receipts: PendingReceipt[]) => void) {
-  let unsubscribed = false
-  let firestoreUnsubscribe: (() => void) | null = null
-  const checkLocal = () => {
-    const local = getLocalPendingReceipts()
-    const filtered = Object.values(local).filter((r: any) => r.ownerId === ownerId && r.status === "pending")
-    callback(filtered as PendingReceipt[])
-  }
   try {
-    const q = query(
-      collection(db, "pendingReceipts"),
-      where("ownerId", "==", ownerId),
-      where("status", "==", "pending")
-    )
-    firestoreUnsubscribe = onSnapshot(q, (snapshot) => {
-      const receipts: PendingReceipt[] = []
-      snapshot.forEach((doc) => {
-        receipts.push(doc.data() as PendingReceipt)
-      })
-      callback(receipts)
-    }, (err) => {
-      if (!unsubscribed) {
-        checkLocal()
-        window.addEventListener("pending-receipts-updated", checkLocal)
-      }
+    const storageRef = ref(storage, `receipts/${ownerId}/${generatedFileName}`)
+    const snapshot = await uploadBytes(storageRef, file)
+    receiptUrl = await getDownloadURL(snapshot.ref)
+  } catch (error) {
+    fileBase64 = await new Promise<string>((resolve, reject) => {
+      const reader = new FileReader()
+      reader.onload = () => resolve(reader.result as string)
+      reader.onerror = reject
+      reader.readAsDataURL(file)
     })
-  } catch (error) {
-    checkLocal()
-    window.addEventListener("pending-receipts-updated", checkLocal)
+    receiptUrl = fileBase64
+    fallbackUsed = true
   }
-  return () => {
-    unsubscribed = true
-    if (firestoreUnsubscribe) firestoreUnsubscribe()
+
+  const receiptData = {
+    ownerId,
+    fileName: file.name,
+    fileType: file.type,
+    fileSize: file.size,
+    receiptUrl,
+    description,
+    uploadedAt: Timestamp.now(),
+    uploadedViaLink: true,
+    linkId,
+  }
+
+  try {
+    await addDoc(collection(db, "receipts"), receiptData)
+  } catch (error) {
     if (typeof window !== "undefined") {
-      window.removeEventListener("pending-receipts-updated", checkLocal)
+      const localReceipt = {
+        id: crypto.randomUUID(),
+        userId: ownerId,
+        fileName: file.name,
+        fileType: file.type,
+        fileSize: file.size,
+        description,
+        uploadedAt: new Date().toISOString(),
+        fileData: fileBase64 || await new Promise<string>((resolve, reject) => {
+          const reader = new FileReader()
+          reader.onload = () => resolve(reader.result as string)
+          reader.onerror = reject
+          reader.readAsDataURL(file)
+        })
+      }
+      const existing = JSON.parse(localStorage.getItem("ctrlfund_receipts") || "[]")
+      localStorage.setItem("ctrlfund_receipts", JSON.stringify([...existing, localReceipt]))
+      window.dispatchEvent(new Event("receipts-updated"))
     }
   }
-}
 
-export async function approvePendingReceipt(receipt: PendingReceipt) {
-  let fallback = false
-  try {
-    const ref = doc(db, "pendingReceipts", receipt.id)
-    await updateDoc(ref, { status: "approved" })
-  } catch (error) {
-    const local = getLocalPendingReceipts()
-    if (local[receipt.id]) {
-      local[receipt.id].status = "approved"
-      localStorage.setItem("ctrlfund_pending_receipts", JSON.stringify(local))
-      window.dispatchEvent(new Event("pending-receipts-updated"))
-    }
-    fallback = true
-  }
-  if (typeof window !== "undefined") {
-    const permanentReceipt = {
-      id: receipt.id,
-      userId: receipt.ownerId,
-      fileName: receipt.fileName,
-      fileType: receipt.fileType,
-      fileSize: receipt.fileSize,
-      description: receipt.description,
-      uploadedAt: receipt.uploadedAt,
-      fileData: receipt.fileData,
-    }
-    const existing = JSON.parse(localStorage.getItem("ctrlfund_receipts") || "[]")
-    localStorage.setItem("ctrlfund_receipts", JSON.stringify([...existing, permanentReceipt]))
-    window.dispatchEvent(new Event("receipts-updated"))
-  }
-  return { id: receipt.id, fallback }
-}
-
-export async function rejectPendingReceipt(receiptId: string) {
-  let fallback = false
-  try {
-    const ref = doc(db, "pendingReceipts", receiptId)
-    await deleteDoc(ref)
-  } catch (error) {
-    const local = getLocalPendingReceipts()
-    if (local[receiptId]) {
-      delete local[receiptId]
-      localStorage.setItem("ctrlfund_pending_receipts", JSON.stringify(local))
-      window.dispatchEvent(new Event("pending-receipts-updated"))
-    }
-    fallback = true
-  }
-  return { id: receiptId, fallback }
+  return { success: true, fallbackUsed }
 }

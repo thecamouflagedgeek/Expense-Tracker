@@ -18,7 +18,6 @@ import { Loader2, UploadCloud } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useAuth } from "@/contexts/auth-context";
 import { useNotification } from "@/contexts/notification-context";
-import GenerateUploadQR from "@/components/generate-qr-code";
 const LOCAL_STORAGE_RECEIPTS_KEY = "ctrlfund_receipts";
 
 type Receipt = {
@@ -179,15 +178,6 @@ export function ReceiptUploadModal() {
             </Button>
           </DialogFooter>
         </form>
-        <div className="my-6 flex items-center gap-3">
-          <div className="h-px bg-black/10 flex-1">
-            <span className="text-xs font-bold text-black/40">
-              Or share upload access
-            </span>
-            <div className="h-px bg-black/10 flex-1" />
-          </div>
-          <GenerateUploadQR></GenerateUploadQR>
-        </div>
       </DialogContent>
     </Dialog>
   );

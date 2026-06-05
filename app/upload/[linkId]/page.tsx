@@ -3,13 +3,13 @@
 import { useState, useEffect, useRef } from "react"
 import { useParams } from "next/navigation"
 import { motion } from "framer-motion"
-import { validateUploadLink, createPendingReceipt } from "../service"
+import { validateUploadLink, uploadReceiptToFirebase } from "@/app/receipt-upload/service"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
-import { Loader2, UploadCloud, CheckCircle2, AlertTriangle, FileText } from "lucide-react"
+import { Loader2, UploadCloud, CheckCircle2, AlertTriangle, Camera, FileText } from "lucide-react"
 
 export default function PublicUploadPage() {
   const params = useParams()
@@ -26,6 +26,7 @@ export default function PublicUploadPage() {
   const [success, setSuccess] = useState(false)
 
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const cameraInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     if (!linkId) return
@@ -52,6 +53,18 @@ export default function PublicUploadPage() {
     }
   }
 
+  const triggerFileSelect = () => {
+    if (fileInputRef.current) {
+      fileInputRef.current.click()
+    }
+  }
+
+  const triggerCamera = () => {
+    if (cameraInputRef.current) {
+      cameraInputRef.current.click()
+    }
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!file || !ownerId) return
@@ -60,26 +73,7 @@ export default function PublicUploadPage() {
     setError(null)
 
     try {
-      const fileData = await new Promise<string>((resolve, reject) => {
-        const reader = new FileReader()
-        reader.onload = () => resolve(reader.result as string)
-        reader.onerror = reject
-        reader.readAsDataURL(file)
-      })
-
-      const receiptId = crypto.randomUUID()
-      await createPendingReceipt({
-        id: receiptId,
-        linkId,
-        ownerId,
-        fileName: file.name,
-        fileType: file.type,
-        fileSize: file.size,
-        description,
-        uploadedAt: new Date().toISOString(),
-        fileData,
-      })
-
+      await uploadReceiptToFirebase(ownerId, linkId, file, description)
       setSuccess(true)
     } catch (err: any) {
       setError(err.message || "Failed to upload receipt")
@@ -110,8 +104,8 @@ export default function PublicUploadPage() {
                 <AlertTriangle className="w-6 h-6 text-red-600" />
               </div>
               <CardTitle className="text-xl font-bold text-red-700">Link Expired or Invalid</CardTitle>
-              <CardDescription className="text-red-600/80 mt-1">
-                This receipt upload link is no longer active. Please request a new QR link from the owner.
+              <CardDescription className="text-red-600/85 mt-1">
+                This upload link has expired.
               </CardDescription>
             </CardHeader>
           </Card>
@@ -135,7 +129,7 @@ export default function PublicUploadPage() {
               </div>
               <CardTitle className="text-xl font-bold text-emerald-800">Upload Complete</CardTitle>
               <CardDescription className="text-emerald-700/80 mt-1">
-                Your receipt has been submitted successfully and is pending approval from the owner.
+                Receipt uploaded successfully.
               </CardDescription>
             </CardHeader>
           </Card>
@@ -158,37 +152,67 @@ export default function PublicUploadPage() {
               Upload Receipt
             </CardTitle>
             <CardDescription className="text-xs">
-              Upload an invoice image or PDF. It will be sent to the owner for approval.
+              Upload an invoice image/PDF or take a photo directly from your camera.
             </CardDescription>
           </CardHeader>
           <CardContent className="p-6">
             <form onSubmit={handleSubmit} className="grid gap-5">
               <div className="grid gap-2">
-                <Label htmlFor="file" className="text-xs font-bold text-black/50">Receipt File</Label>
-                <div className="flex flex-col items-center justify-center border border-dashed border-black/15 rounded-2xl p-6 bg-black/[0.01] hover:bg-black/[0.02] transition-colors cursor-pointer relative">
-                  <Input
-                    id="file"
-                    type="file"
-                    accept="image/*,.pdf"
-                    onChange={handleFileChange}
-                    ref={fileInputRef}
-                    className="absolute inset-0 opacity-0 cursor-pointer"
-                  />
-                  {file ? (
-                    <div className="flex flex-col items-center gap-2 text-center">
-                      <FileText className="w-8 h-8 text-black/50" />
-                      <p className="text-xs font-bold text-black truncate max-w-[200px]">{file.name}</p>
-                      <p className="text-[10px] text-black/45">{(file.size / 1024).toFixed(1)} KB</p>
-                    </div>
-                  ) : (
-                    <div className="flex flex-col items-center gap-2 text-center">
-                      <UploadCloud className="w-8 h-8 text-black/30" />
-                      <p className="text-xs font-bold text-black/60">Choose file or drag & drop</p>
-                      <p className="text-[10px] text-black/40">PNG, JPG, JPEG, or PDF</p>
-                    </div>
-                  )}
+                <Label className="text-xs font-bold text-black/50">Receipt Source</Label>
+                
+                <input
+                  type="file"
+                  accept="image/*,.pdf"
+                  onChange={handleFileChange}
+                  ref={fileInputRef}
+                  className="hidden"
+                />
+
+                <input
+                  type="file"
+                  accept="image/*"
+                  capture="environment"
+                  onChange={handleFileChange}
+                  ref={cameraInputRef}
+                  className="hidden"
+                />
+
+                <div className="grid grid-cols-2 gap-3">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={triggerCamera}
+                    className="h-20 rounded-2xl flex flex-col items-center justify-center border border-black/10 hover:bg-black/5 gap-1.5"
+                  >
+                    <Camera className="w-5 h-5 text-black/60" />
+                    <span className="text-[10px] font-black uppercase tracking-wider">Take Photo</span>
+                  </Button>
+
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={triggerFileSelect}
+                    className="h-20 rounded-2xl flex flex-col items-center justify-center border border-black/10 hover:bg-black/5 gap-1.5"
+                  >
+                    <UploadCloud className="w-5 h-5 text-black/60" />
+                    <span className="text-[10px] font-black uppercase tracking-wider">Choose File</span>
+                  </Button>
                 </div>
               </div>
+
+              {file && (
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  className="flex items-center gap-3 p-3 bg-black/[0.02] border border-black/5 rounded-2xl"
+                >
+                  <FileText className="w-8 h-8 text-black/50" />
+                  <div className="min-w-0 flex-1">
+                    <p className="text-xs font-bold text-black truncate">{file.name}</p>
+                    <p className="text-[10px] text-black/45">{(file.size / 1024).toFixed(1)} KB</p>
+                  </div>
+                </motion.div>
+              )}
 
               <div className="grid gap-2">
                 <Label htmlFor="description" className="text-xs font-bold text-black/50">Description (Optional)</Label>
@@ -196,7 +220,7 @@ export default function PublicUploadPage() {
                   id="description"
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
-                  placeholder="e.g. Starbucks team lunch"
+                  placeholder="e.g. Office supplies"
                   className="bg-white text-black border border-black/5 rounded-2xl text-xs h-10 font-semibold shadow-sm focus:ring-2 focus:ring-black placeholder:text-black/30"
                 />
               </div>
