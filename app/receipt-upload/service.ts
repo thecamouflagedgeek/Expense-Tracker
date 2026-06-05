@@ -1,7 +1,7 @@
 import { db, storage } from "@/lib/firebase"
-import { doc, getDoc, setDoc, Timestamp, collection, addDoc } from "firebase/firestore"
+import { doc, getDoc, setDoc, Timestamp, collection, addDoc, query, where, onSnapshot, updateDoc } from "firebase/firestore"
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage"
-import { UploadLink } from "./types"
+import { UploadLink, PendingUploader } from "./types"
 
 function getMillis(timestamp: any): number {
   if (!timestamp) return 0
@@ -183,4 +183,135 @@ export async function uploadReceiptToFirebase(
   }
 
   return { success: true, fallbackUsed }
+}
+
+function getLocalUploaders(): Record<string, any> {
+  if (typeof window === "undefined") return {}
+  const data = localStorage.getItem("ctrlfund_pending_uploaders")
+  return data ? JSON.parse(data) : {}
+}
+
+export async function requestUploaderAccess(linkId: string, ownerId: string, name: string) {
+  const uploaderId = crypto.randomUUID()
+  const uploaderData: PendingUploader = {
+    id: uploaderId,
+    linkId,
+    ownerId,
+    name,
+    status: "pending",
+    createdAt: Timestamp.now(),
+  }
+  try {
+    await setDoc(doc(db, "pendingUploaders", uploaderId), uploaderData)
+  } catch (error) {
+    if (typeof window !== "undefined") {
+      const local = getLocalUploaders()
+      local[uploaderId] = {
+        ...uploaderData,
+        createdAt: uploaderData.createdAt.toMillis()
+      }
+      localStorage.setItem("ctrlfund_pending_uploaders", JSON.stringify(local))
+      window.dispatchEvent(new Event("pending-uploaders-updated"))
+    }
+  }
+  return uploaderId
+}
+
+export function subscribePendingUploaders(ownerId: string, callback: (uploaders: PendingUploader[]) => void) {
+  let unsubscribed = false
+  let firestoreUnsubscribe: (() => void) | null = null
+  const checkLocal = () => {
+    const local = getLocalUploaders()
+    const filtered = Object.values(local).filter(
+      (u: any) => u.ownerId === ownerId && u.status === "pending"
+    )
+    callback(filtered.map((u: any) => ({
+      ...u,
+      createdAt: Timestamp.fromMillis(u.createdAt)
+    })) as PendingUploader[])
+  }
+  try {
+    const q = query(
+      collection(db, "pendingUploaders"),
+      where("ownerId", "==", ownerId),
+      where("status", "==", "pending")
+    )
+    firestoreUnsubscribe = onSnapshot(q, (snapshot) => {
+      const uploaders: PendingUploader[] = []
+      snapshot.forEach((doc) => {
+        uploaders.push(doc.data() as PendingUploader)
+      })
+      callback(uploaders)
+    }, (err) => {
+      if (!unsubscribed) {
+        checkLocal()
+        window.addEventListener("pending-uploaders-updated", checkLocal)
+      }
+    })
+  } catch (error) {
+    checkLocal()
+    window.addEventListener("pending-uploaders-updated", checkLocal)
+  }
+  return () => {
+    unsubscribed = true
+    if (firestoreUnsubscribe) firestoreUnsubscribe()
+    if (typeof window !== "undefined") {
+      window.removeEventListener("pending-uploaders-updated", checkLocal)
+    }
+  }
+}
+
+export async function respondToUploaderAccess(uploaderId: string, approve: boolean) {
+  const status = approve ? "approved" : "rejected"
+  try {
+    await updateDoc(doc(db, "pendingUploaders", uploaderId), { status })
+  } catch (error) {
+    const local = getLocalUploaders()
+    if (local[uploaderId]) {
+      local[uploaderId].status = status
+      localStorage.setItem("ctrlfund_pending_uploaders", JSON.stringify(local))
+      window.dispatchEvent(new Event("pending-uploaders-updated"))
+    }
+  }
+}
+
+export function subscribeUploaderStatus(uploaderId: string, callback: (uploader: PendingUploader | null) => void) {
+  let unsubscribed = false
+  let firestoreUnsubscribe: (() => void) | null = null
+  const checkLocal = () => {
+    const local = getLocalUploaders()
+    const found = local[uploaderId]
+    if (found) {
+      callback({
+        ...found,
+        createdAt: Timestamp.fromMillis(found.createdAt)
+      } as PendingUploader)
+    } else {
+      callback(null)
+    }
+  }
+  try {
+    firestoreUnsubscribe = onSnapshot(doc(db, "pendingUploaders", uploaderId), (snapshot) => {
+      if (snapshot.exists()) {
+        callback(snapshot.data() as PendingUploader)
+      } else {
+        checkLocal()
+      }
+    }, (err) => {
+      if (!unsubscribed) {
+        checkLocal()
+        window.addEventListener("pending-uploaders-updated", checkLocal)
+      }
+    })
+  } catch (error) {
+    checkLocal()
+    window.addEventListener("pending-uploaders-updated", checkLocal)
+  }
+  return () => {
+    unsubscribed = true
+    if (firestoreUnsubscribe) firestoreUnsubscribe()
+    if (typeof window !== "undefined") {
+      window.removeEventListener("pending-uploaders-updated", checkLocal)
+    }
+  }
 }

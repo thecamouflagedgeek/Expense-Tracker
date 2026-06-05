@@ -3,13 +3,70 @@
 import { useState, useEffect, useRef } from "react"
 import { useParams } from "next/navigation"
 import { motion } from "framer-motion"
-import { validateUploadLink, uploadReceiptToFirebase } from "@/app/receipt-upload/service"
+import { 
+  validateUploadLink, 
+  uploadReceiptToFirebase,
+  requestUploaderAccess,
+  subscribeUploaderStatus
+} from "@/app/receipt-upload/service"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
-import { Loader2, UploadCloud, CheckCircle2, AlertTriangle, Camera, FileText } from "lucide-react"
+import { Loader2, UploadCloud, CheckCircle2, AlertTriangle, Camera, FileText, UserCheck, Key } from "lucide-react"
+
+async function compressImage(file: File): Promise<File> {
+  if (!file.type.startsWith("image/")) return file
+  return new Promise((resolve) => {
+    const reader = new FileReader()
+    reader.onload = (e) => {
+      const img = new Image()
+      img.onload = () => {
+        const canvas = document.createElement("canvas")
+        let width = img.width
+        let height = img.height
+        const MAX_WIDTH = 1200
+        const MAX_HEIGHT = 1200
+        if (width > height) {
+          if (width > MAX_WIDTH) {
+            height *= MAX_WIDTH / width
+            width = MAX_WIDTH
+          }
+        } else {
+          if (height > MAX_HEIGHT) {
+            width *= MAX_HEIGHT / height
+            height = MAX_HEIGHT
+          }
+        }
+        canvas.width = width
+        canvas.height = height
+        const ctx = canvas.getContext("2d")
+        if (ctx) {
+          ctx.drawImage(img, 0, 0, width, height)
+          canvas.toBlob(
+            (blob) => {
+              if (blob) {
+                resolve(new File([blob], file.name, {
+                  type: "image/jpeg",
+                  lastModified: Date.now(),
+                }))
+              } else {
+                resolve(file)
+              }
+            },
+            "image/jpeg",
+            0.75
+          )
+        } else {
+          resolve(file)
+        }
+      }
+      img.src = e.target?.result as string
+    }
+    reader.readAsDataURL(file)
+  })
+}
 
 export default function PublicUploadPage() {
   const params = useParams()
@@ -18,6 +75,11 @@ export default function PublicUploadPage() {
   const [checking, setChecking] = useState(true)
   const [isValid, setIsValid] = useState(false)
   const [ownerId, setOwnerId] = useState("")
+
+  const [name, setName] = useState("")
+  const [requestingAccess, setRequestingAccess] = useState(false)
+  const [uploaderId, setUploaderId] = useState<string | null>(null)
+  const [accessStatus, setAccessStatus] = useState<"none" | "pending" | "approved" | "rejected">("none")
 
   const [file, setFile] = useState<File | null>(null)
   const [description, setDescription] = useState("")
@@ -46,6 +108,45 @@ export default function PublicUploadPage() {
     checkLink()
   }, [linkId])
 
+  useEffect(() => {
+    if (typeof window === "undefined" || !linkId) return
+    const stored = localStorage.getItem(`ctrlfund_uploader_${linkId}`)
+    if (stored) {
+      setUploaderId(stored)
+    }
+  }, [linkId])
+
+  useEffect(() => {
+    if (!uploaderId) return
+    const unsub = subscribeUploaderStatus(uploaderId, (uploader) => {
+      if (uploader) {
+        setAccessStatus(uploader.status)
+      } else {
+        setAccessStatus("none")
+      }
+    })
+    return () => unsub()
+  }, [uploaderId])
+
+  const handleRequestAccess = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!name.trim() || !ownerId || !linkId) return
+    setRequestingAccess(true)
+    setError(null)
+    try {
+      const id = await requestUploaderAccess(linkId, ownerId, name.trim())
+      setUploaderId(id)
+      setAccessStatus("pending")
+      if (typeof window !== "undefined") {
+        localStorage.setItem(`ctrlfund_uploader_${linkId}`, id)
+      }
+    } catch (err: any) {
+      setError(err.message || "Failed to request access")
+    } finally {
+      setRequestingAccess(false)
+    }
+  }
+
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       setFile(e.target.files[0])
@@ -68,12 +169,11 @@ export default function PublicUploadPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!file || !ownerId) return
-
     setUploading(true)
     setError(null)
-
     try {
-      await uploadReceiptToFirebase(ownerId, linkId, file, description)
+      const processedFile = await compressImage(file)
+      await uploadReceiptToFirebase(ownerId, linkId, processedFile, description)
       setSuccess(true)
     } catch (err: any) {
       setError(err.message || "Failed to upload receipt")
@@ -93,11 +193,7 @@ export default function PublicUploadPage() {
   if (!isValid) {
     return (
       <div className="flex items-center justify-center min-h-[400px] px-4">
-        <motion.div
-          initial={{ opacity: 0, y: 15 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="max-w-md w-full"
-        >
+        <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} className="max-w-md w-full">
           <Card className="border border-red-200 bg-red-50/50 shadow-xl rounded-3xl p-6 text-center">
             <CardHeader className="flex flex-col items-center">
               <div className="w-12 h-12 rounded-full bg-red-100 flex items-center justify-center mb-4">
@@ -105,7 +201,102 @@ export default function PublicUploadPage() {
               </div>
               <CardTitle className="text-xl font-bold text-red-700">Link Expired or Invalid</CardTitle>
               <CardDescription className="text-red-600/85 mt-1">
-                This upload link has expired.
+                This upload link has expired or is invalid.
+              </CardDescription>
+            </CardHeader>
+          </Card>
+        </motion.div>
+      </div>
+    )
+  }
+
+  if (accessStatus === "none") {
+    return (
+      <div className="flex items-center justify-center min-h-[500px] px-4">
+        <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} className="max-w-md w-full">
+          <Card className="border border-black/5 bg-white/70 backdrop-blur rounded-3xl shadow-xl overflow-hidden">
+            <CardHeader className="border-b border-black/5 bg-black/[0.01] px-6 py-4">
+              <CardTitle className="text-lg font-bold flex items-center gap-2 text-black">
+                <Key className="w-5 h-5 text-black" />
+                Request Access
+              </CardTitle>
+              <CardDescription className="text-xs">
+                Enter your name to request receipt upload permission from the owner.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="p-6">
+              <form onSubmit={handleRequestAccess} className="grid gap-5">
+                <div className="grid gap-2">
+                  <Label htmlFor="name" className="text-xs font-bold text-black/50">Your Name</Label>
+                  <Input
+                    id="name"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    placeholder="e.g. John Doe"
+                    className="bg-white text-black border border-black/5 rounded-2xl text-xs h-10 font-semibold shadow-sm focus:ring-2 focus:ring-black placeholder:text-black/30"
+                    required
+                  />
+                </div>
+                {error && (
+                  <Alert variant="destructive" className="rounded-2xl">
+                    <AlertTitle className="text-xs font-bold">Request Failed</AlertTitle>
+                    <AlertDescription className="text-[11px]">{error}</AlertDescription>
+                  </Alert>
+                )}
+                <Button
+                  type="submit"
+                  disabled={requestingAccess || !name.trim()}
+                  className="button-gradient w-full h-11 text-xs font-bold rounded-2xl text-black hover:opacity-90 transition-opacity"
+                >
+                  {requestingAccess ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Sending Request...
+                    </>
+                  ) : (
+                    "Request Permission"
+                  )}
+                </Button>
+              </form>
+            </CardContent>
+          </Card>
+        </motion.div>
+      </div>
+    )
+  }
+
+  if (accessStatus === "pending") {
+    return (
+      <div className="flex items-center justify-center min-h-[400px] px-4">
+        <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} className="max-w-md w-full">
+          <Card className="border border-black/5 bg-white/70 shadow-xl rounded-3xl p-6 text-center">
+            <CardHeader className="flex flex-col items-center">
+              <div className="w-12 h-12 rounded-full bg-black/5 flex items-center justify-center mb-4">
+                <Loader2 className="w-6 h-6 animate-spin text-black" />
+              </div>
+              <CardTitle className="text-xl font-bold text-black">Access Pending</CardTitle>
+              <CardDescription className="text-black/60 mt-1">
+                Waiting for the owner to approve your upload request. Please keep this screen open.
+              </CardDescription>
+            </CardHeader>
+          </Card>
+        </motion.div>
+      </div>
+    )
+  }
+
+  if (accessStatus === "rejected") {
+    return (
+      <div className="flex items-center justify-center min-h-[400px] px-4">
+        <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} className="max-w-md w-full">
+          <Card className="border border-red-200 bg-red-50/50 shadow-xl rounded-3xl p-6 text-center">
+            <CardHeader className="flex flex-col items-center">
+              <div className="w-12 h-12 rounded-full bg-red-100 flex items-center justify-center mb-4">
+                <AlertTriangle className="w-6 h-6 text-red-600" />
+              </div>
+              <CardTitle className="text-xl font-bold text-red-700">Access Denied</CardTitle>
+              <CardDescription className="text-red-600/85 mt-1">
+                Your request to upload has been rejected by the owner.
               </CardDescription>
             </CardHeader>
           </Card>
@@ -117,11 +308,7 @@ export default function PublicUploadPage() {
   if (success) {
     return (
       <div className="flex items-center justify-center min-h-[400px] px-4">
-        <motion.div
-          initial={{ opacity: 0, y: 15 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="max-w-md w-full"
-        >
+        <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} className="max-w-md w-full">
           <Card className="border border-emerald-200 bg-emerald-50/50 shadow-xl rounded-3xl p-6 text-center">
             <CardHeader className="flex flex-col items-center">
               <div className="w-12 h-12 rounded-full bg-emerald-100 flex items-center justify-center mb-4">
@@ -140,11 +327,7 @@ export default function PublicUploadPage() {
 
   return (
     <div className="flex items-center justify-center min-h-[500px] px-4">
-      <motion.div
-        initial={{ opacity: 0, y: 15 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="max-w-md w-full"
-      >
+      <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} className="max-w-md w-full">
         <Card className="border border-black/5 bg-white/70 backdrop-blur rounded-3xl shadow-xl overflow-hidden">
           <CardHeader className="border-b border-black/5 bg-black/[0.01] px-6 py-4">
             <CardTitle className="text-lg font-bold flex items-center gap-2 text-black">
@@ -159,24 +342,8 @@ export default function PublicUploadPage() {
             <form onSubmit={handleSubmit} className="grid gap-5">
               <div className="grid gap-2">
                 <Label className="text-xs font-bold text-black/50">Receipt Source</Label>
-                
-                <input
-                  type="file"
-                  accept="image/*,.pdf"
-                  onChange={handleFileChange}
-                  ref={fileInputRef}
-                  className="hidden"
-                />
-
-                <input
-                  type="file"
-                  accept="image/*"
-                  capture="environment"
-                  onChange={handleFileChange}
-                  ref={cameraInputRef}
-                  className="hidden"
-                />
-
+                <input type="file" accept="image/*,.pdf" onChange={handleFileChange} ref={fileInputRef} className="hidden" />
+                <input type="file" accept="image/*" capture="environment" onChange={handleFileChange} ref={cameraInputRef} className="hidden" />
                 <div className="grid grid-cols-2 gap-3">
                   <Button
                     type="button"
@@ -187,7 +354,6 @@ export default function PublicUploadPage() {
                     <Camera className="w-5 h-5 text-black/60" />
                     <span className="text-[10px] font-black uppercase tracking-wider">Take Photo</span>
                   </Button>
-
                   <Button
                     type="button"
                     variant="outline"

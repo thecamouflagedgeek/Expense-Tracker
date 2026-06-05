@@ -3,13 +3,14 @@
 import { useState, useEffect } from "react"
 import { motion } from "framer-motion"
 import { useAuth } from "@/contexts/auth-context"
-import { generateReceiptUploadLink } from "./service"
+import { generateReceiptUploadLink, subscribePendingUploaders, respondToUploaderAccess } from "./service"
+import { PendingUploader } from "./types"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { collection, query, where, onSnapshot, Timestamp } from "firebase/firestore"
 import { db } from "@/lib/firebase"
-import { Link2, Clock, Copy, Check, Loader2, AlertTriangle, FileCheck } from "lucide-react"
+import { Link2, Clock, Copy, Check, Loader2, AlertTriangle, FileCheck, UserCheck } from "lucide-react"
 
 export default function ReceiptUploadPage() {
   const { user, loading: authLoading } = useAuth()
@@ -17,6 +18,23 @@ export default function ReceiptUploadPage() {
   const [generatedLink, setGeneratedLink] = useState<{ linkId: string; uploadUrl: string; expiresAt: any; fallback: boolean } | null>(null)
   const [copied, setCopied] = useState(false)
   const [timeLeft, setTimeLeft] = useState<number | null>(null)
+  const [pendingUploaders, setPendingUploaders] = useState<PendingUploader[]>([])
+
+  useEffect(() => {
+    if (!user) return
+    const unsub = subscribePendingUploaders(user.id, (uploaders) => {
+      setPendingUploaders(uploaders)
+    })
+    return () => unsub()
+  }, [user])
+
+  const handleApproveUploader = async (uploaderId: string, approve: boolean) => {
+    try {
+      await respondToUploaderAccess(uploaderId, approve)
+    } catch (err) {
+      console.error(err)
+    }
+  }
 
   useEffect(() => {
     if (!user) return
@@ -259,13 +277,6 @@ match /receipts/{receiptId} {
                       </Button>
                     </div>
                   </div>
-
-                  <div className="flex flex-col gap-1.5">
-                    <p className="text-[10px] font-bold text-black/40 uppercase tracking-wider">Link ID</p>
-                    <p className="text-xs font-mono bg-black/[0.02] border border-black/5 rounded-xl px-3 py-2 text-black/70 overflow-x-auto">
-                      {generatedLink.linkId}
-                    </p>
-                  </div>
                 </motion.div>
               )}
             </CardContent>
@@ -303,6 +314,49 @@ match /receipts/{receiptId} {
           </Card>
         </div>
       </div>
+
+      {pendingUploaders.length > 0 && (
+        <Card className="border border-black/5 bg-white/70 backdrop-blur rounded-3xl shadow-xl overflow-hidden mt-8">
+          <CardHeader className="border-b border-black/5 bg-black/[0.01] px-6 py-4">
+            <CardTitle className="text-lg font-bold flex items-center gap-2 text-black">
+              <UserCheck className="w-5 h-5 text-black" />
+              Pending Access Requests
+            </CardTitle>
+            <CardDescription className="text-xs">
+              Approve or deny people requesting to upload receipts to your workspace.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="p-6 flex flex-col gap-4">
+            <div className="space-y-3">
+              {pendingUploaders.map((uploader) => (
+                <div key={uploader.id} className="flex items-center justify-between p-4 bg-white border border-black/5 rounded-2xl shadow-sm animate-in fade-in slide-in-from-bottom-2 duration-300">
+                  <div className="flex flex-col">
+                    <span className="text-sm font-bold text-black">{uploader.name}</span>
+                    <span className="text-[10px] text-black/40 font-mono mt-0.5">
+                      Requested: {uploader.createdAt instanceof Timestamp ? uploader.createdAt.toDate().toLocaleTimeString() : new Date().toLocaleTimeString()}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      onClick={() => handleApproveUploader(uploader.id, false)}
+                      variant="outline"
+                      className="text-xs h-9 px-4 rounded-xl border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700 font-bold"
+                    >
+                      Deny
+                    </Button>
+                    <Button
+                      onClick={() => handleApproveUploader(uploader.id, true)}
+                      className="button-gradient text-xs h-9 px-4 rounded-xl text-black hover:opacity-90 transition-opacity font-bold"
+                    >
+                      Approve
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
     </motion.div>
   )
 }
