@@ -7,7 +7,7 @@ import { usePathname, useRouter } from "next/navigation"
 import { useEffect } from "react"
 import { Loader2 } from "lucide-react"
 
-const publicPaths = ["/login", "/shared/note"]
+const publicPaths = ["/login", "/shared/note", "/receipt-upload/"]
 
 export function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth()

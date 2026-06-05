@@ -24,7 +24,8 @@ import {
   FileDown, 
   LogOut, 
   ChevronDown,
-  Globe
+  Globe,
+  Link2
 } from "lucide-react"
 
 export function Navigation() {
@@ -56,12 +57,14 @@ export function Navigation() {
     { name: "Dashboard", href: "/dashboard", icon: Home, show: permissions.canViewDashboard },
     { name: "Transactions", href: "/transactions", icon: CreditCard, show: permissions.canViewTransactions },
     { name: "Notes", href: "/notes", icon: FileText, show: permissions.canViewNotes },
+    { name: "Receipt Upload", href: "/receipt-upload", icon: Link2, show: true },
   ]
 
   // Get Page Title based on route
   const getPageTitle = () => {
     if (pathname.startsWith("/transactions")) return "Finance"
     if (pathname.startsWith("/notes")) return "Notes"
+    if (pathname.startsWith("/receipt-upload")) return "Receipt Upload"
     return "Dashboard"
   }
 
