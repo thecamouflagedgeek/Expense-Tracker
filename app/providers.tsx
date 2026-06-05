@@ -14,16 +14,16 @@ import { usePathname } from "next/navigation";
 
 export function ClientProviders({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
-  const isLandingPage = pathname === "/"
+  const isPublicPage = pathname === "/" || ["/login", "/shared/note", "/upload/"].some((path) => pathname.startsWith(path))
 
   return (
-    <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false} forcedTheme={isLandingPage ? undefined : "light"}>
+    <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false} forcedTheme={isPublicPage ? undefined : "light"}>
       <NotificationProvider>
         <AuthProvider>
           <RoleProvider>
             <CurrencyProvider>
               <TransactionProvider>
-                {isLandingPage ? (
+                {isPublicPage ? (
                   <div className="min-h-screen grid-bg-pattern font-sans antialiased text-[#0c0d0e] dark:text-white">
                     <ProtectedRoute>{children}</ProtectedRoute>
                   </div>

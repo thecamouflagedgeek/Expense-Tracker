@@ -160,7 +160,12 @@ export default function ReceiptUploadPage() {
             </p>
             <pre className="mt-2 p-2 bg-black/5 border border-black/5 rounded-xl font-mono text-[10px] text-black overflow-x-auto select-all">
 {`match /uploadLinks/{linkId} {
-  allow read, write: if request.auth != null;
+  allow read: if true;
+  allow write: if request.auth != null;
+}
+match /receipts/{receiptId} {
+  allow create: if true;
+  allow read, update, delete: if request.auth != null;
 }`}
             </pre>
           </div>

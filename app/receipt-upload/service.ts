@@ -3,6 +3,29 @@ import { doc, getDoc, setDoc, Timestamp, collection, addDoc } from "firebase/fir
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage"
 import { UploadLink } from "./types"
 
+function getMillis(timestamp: any): number {
+  if (!timestamp) return 0
+  if (typeof timestamp.toMillis === "function") {
+    return timestamp.toMillis()
+  }
+  if (typeof timestamp.toDate === "function") {
+    return timestamp.toDate().getTime()
+  }
+  if (timestamp instanceof Date) {
+    return timestamp.getTime()
+  }
+  if (typeof timestamp === "number") {
+    return timestamp
+  }
+  if (typeof timestamp.seconds === "number") {
+    return timestamp.seconds * 1000 + Math.floor((timestamp.nanoseconds || 0) / 1000000)
+  }
+  if (typeof timestamp === "string") {
+    return new Date(timestamp).getTime()
+  }
+  return 0
+}
+
 function getLocalLinks(): Record<string, any> {
   if (typeof window === "undefined") return {}
   const data = localStorage.getItem("ctrlfund_upload_links")
@@ -14,8 +37,8 @@ function saveLocalLink(linkId: string, linkData: any) {
   const links = getLocalLinks()
   links[linkId] = {
     ...linkData,
-    createdAt: linkData.createdAt.toMillis(),
-    expiresAt: linkData.expiresAt.toMillis(),
+    createdAt: getMillis(linkData.createdAt),
+    expiresAt: getMillis(linkData.expiresAt),
   }
   localStorage.setItem("ctrlfund_upload_links", JSON.stringify(links))
 }
@@ -34,12 +57,12 @@ export async function generateReceiptUploadLink(userId: string) {
     createdAt,
     expiresAt,
   }
+  saveLocalLink(linkId, linkData)
   let fallback = false
   try {
     const linkDocRef = doc(db, "uploadLinks", linkId)
     await setDoc(linkDocRef, linkData)
   } catch (error) {
-    saveLocalLink(linkId, linkData)
     fallback = true
   }
   const origin = typeof window !== "undefined" ? window.location.origin : ""
@@ -64,8 +87,8 @@ export async function validateUploadLink(linkId: string): Promise<{ valid: boole
       if (data.status !== "active") {
         return { valid: false }
       }
-      const now = Timestamp.now()
-      if (data.expiresAt.toMillis() <= now.toMillis()) {
+      const expiresAtMillis = getMillis(data.expiresAt)
+      if (expiresAtMillis <= Date.now()) {
         return { valid: false }
       }
       return {
