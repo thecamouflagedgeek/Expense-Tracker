@@ -217,14 +217,14 @@ export async function approvePendingReceipt(receipt: PendingReceipt) {
       linkId: receipt.linkId
     }
     console.log("[Receipt System] Adding final receipt to Firestore receipts collection")
-    await addDoc(collection(db, "receipts"), finalReceiptData)
-    console.log("[Receipt System] Final receipt added successfully to Firestore.")
+    const docRef = await addDoc(collection(db, "receipts"), finalReceiptData)
+    console.log("[Receipt System] Final receipt added successfully to Firestore. ID: " + docRef.id)
     console.log("[Receipt System] Deleting pending receipt document: " + receipt.id)
     await deleteDoc(doc(db, "pendingReceipts", receipt.id))
     console.log("[Receipt System] Pending receipt deleted from Firestore.")
     if (typeof window !== "undefined") {
       const permanentReceipt = {
-        id: receipt.id,
+        id: docRef.id,
         userId: receipt.ownerId,
         fileName: receipt.fileName,
         fileType: receipt.fileType,
@@ -234,9 +234,13 @@ export async function approvePendingReceipt(receipt: PendingReceipt) {
         fileData: receipt.imageData,
       }
       const existing = JSON.parse(localStorage.getItem("ctrlfund_receipts") || "[]")
-      localStorage.setItem("ctrlfund_receipts", JSON.stringify([...existing, permanentReceipt]))
-      window.dispatchEvent(new Event("receipts-updated"))
-      console.log("[Receipt System] Permanent receipt saved to local storage.")
+      if (!existing.some((r: any) => r.id === docRef.id)) {
+        localStorage.setItem("ctrlfund_receipts", JSON.stringify([...existing, permanentReceipt]))
+        window.dispatchEvent(new Event("receipts-updated"))
+        console.log("[Receipt System] Permanent receipt saved to local storage.")
+      } else {
+        console.log("[Receipt System] Permanent receipt already exists in local storage, skipping duplicate.")
+      }
     }
   } catch (error) {
     console.error("[Receipt System] Error during receipt approval: ", error)

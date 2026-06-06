@@ -52,7 +52,7 @@ export default function ReceiptUploadPage() {
 
       const stored = localStorage.getItem("ctrlfund_receipts")
       const localParsed = stored ? JSON.parse(stored) : []
-      const merged = [...localParsed]
+      let merged = [...localParsed]
       let updated = false
       for (const fr of firestoreReceipts) {
         if (!merged.some((r) => r.id === fr.id)) {
@@ -60,8 +60,32 @@ export default function ReceiptUploadPage() {
           updated = true
         }
       }
+
+      // Deduplicate to clean up any past duplicates based on content similarity
+      const seen = new Set<string>()
+      const uniqueMerged: any[] = []
+      for (const receipt of merged) {
+        const key = `${receipt.userId}_${receipt.fileName}_${receipt.fileSize}`
+        if (!seen.has(key)) {
+          seen.add(key)
+          uniqueMerged.push(receipt)
+        } else {
+          const existingIndex = uniqueMerged.findIndex(
+            (r) => r.fileName === receipt.fileName && r.fileSize === receipt.fileSize && r.userId === receipt.userId
+          )
+          if (existingIndex !== -1) {
+            const isCurrentFromFirestore = firestoreReceipts.some((fr) => fr.id === receipt.id)
+            const isExistingFromFirestore = firestoreReceipts.some((fr) => fr.id === uniqueMerged[existingIndex].id)
+            if (isCurrentFromFirestore && !isExistingFromFirestore) {
+              uniqueMerged[existingIndex] = receipt
+            }
+          }
+          updated = true
+        }
+      }
+
       if (updated) {
-        localStorage.setItem("ctrlfund_receipts", JSON.stringify(merged))
+        localStorage.setItem("ctrlfund_receipts", JSON.stringify(uniqueMerged))
         window.dispatchEvent(new Event("receipts-updated"))
       }
     })
