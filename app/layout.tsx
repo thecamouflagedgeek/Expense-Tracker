@@ -17,7 +17,7 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <body>
         <svg style={{ display: "none" }} aria-hidden="true">
           <filter id="liquidFilter">

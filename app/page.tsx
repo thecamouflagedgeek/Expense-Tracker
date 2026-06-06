@@ -19,6 +19,9 @@ import {
   ArrowUp,
   Moon,
   Sun,
+  Wallet,
+  Shield,
+  Users,
 } from "lucide-react";
 
 // Mock client avatars for social proof
@@ -48,9 +51,9 @@ const detailedFeatures: DetailFeature[] = [
   },
   {
     id: "receipts",
-    title: "Receipts",
-    shortDesc: "Store receipt files and upload to Drive queue.",
-    longDesc: "Upload receipt images or PDFs, keep them linked to your workspace, and queue files for Drive upload when needed.",
+    title: "Receipt Sharing & Approval",
+    shortDesc: "Share secure upload links and approve receipts.",
+    longDesc: "Generate temporary 5-minute sharing links to receive receipt uploads anonymously, review and approve files directly from your dashboard, and store them securely as Base64 in Firestore.",
   },
   {
     id: "notes",
@@ -653,6 +656,36 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* QUICK HIGHLIGHTS FEATURES */}
+      <section className="max-w-7xl mx-auto px-6 md:px-12 pb-24">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+          {[
+            [Wallet, "Expense Tracking", "Log cash flows daily"],
+            [TrendingUp, "Analytics", "Interactive insights"],
+            [Shield, "Secure Reports", "Encrypted PDF exports"],
+            [Users, "Multi User Access", "Collaborate with others"],
+          ].map(([Icon, title, desc], i) => {
+            const C: any = Icon;
+            return (
+              <motion.div
+                key={i}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.5, delay: i * 0.1 }}
+                className="bg-white dark:bg-[#0c0d10] border border-black/5 dark:border-white/5 rounded-3xl p-6 hover:border-[#ccff00]/30 transition-all duration-300 group shadow-sm"
+              >
+                <div className="w-10 h-10 rounded-xl bg-black/5 dark:bg-white/5 flex items-center justify-center mb-5 group-hover:bg-[#ccff00]/10 transition-colors">
+                  <C className="w-5 h-5 text-black/70 dark:text-white group-hover:text-[#ccff00] transition-colors" />
+                </div>
+                <h3 className="font-extrabold text-sm text-[#0c0d0e] dark:text-white">{title}</h3>
+                <p className="text-[11px] text-black/50 dark:text-white/50 font-semibold mt-1">{desc}</p>
+              </motion.div>
+            );
+          })}
+        </div>
+      </section>
+
       {/* METHODOLOGY SECTION */}
       <section id="methodology" className="border-t border-black/5 dark:border-white/5 py-24 md:py-32 scroll-mt-20">
         <div className="max-w-7xl mx-auto px-6 md:px-12">
@@ -923,22 +956,22 @@ export default function LandingPage() {
                     {activeFeature === "receipts" && (
                       <div className="space-y-4 max-w-[340px] mx-auto bg-[#f5f5f0] dark:bg-[#14161f] border border-black/10 dark:border-white/10 rounded-2xl p-4 shadow-xl">
                         <div className="flex items-start gap-3">
-                          <div className="w-9 h-9 rounded-full bg-red-500/10 border border-red-500/30 flex items-center justify-center flex-shrink-0 text-red-500">
+                          <div className="w-9 h-9 rounded-full bg-[#ccff00]/10 border border-[#ccff00]/30 flex items-center justify-center flex-shrink-0 text-[#ccff00]">
                             📎
                           </div>
                           <div>
-                            <h4 className="text-xs font-bold text-[#0c0d0e] dark:text-white">Receipt Upload</h4>
+                            <h4 className="text-xs font-bold text-[#0c0d0e] dark:text-white">Receipt Sharing & Approval</h4>
                             <p className="text-[10px] text-black/50 dark:text-white/50 mt-0.5 leading-relaxed">
-                              Save an image or PDF, add a description, and keep it ready for export or Drive upload.
+                              Generate temporary 5-minute sharing links, review uploads, and approve receipts to save them directly to Firestore.
                             </p>
                           </div>
                         </div>
                         <div className="flex gap-2 pt-2 text-[10px] font-bold">
                           <button className="flex-1 bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 text-[#0c0d0e] dark:text-white py-2 rounded-lg transition-colors">
-                            Save Receipt
+                            Generate Link
                           </button>
-                          <button className="flex-1 bg-red-500 hover:bg-red-600 text-white py-2 rounded-lg transition-colors">
-                            Add Description
+                          <button className="flex-1 bg-[#ccff00] hover:bg-[#ccff00]/95 text-black py-2 rounded-lg transition-colors">
+                            Approve Upload
                           </button>
                         </div>
                       </div>
