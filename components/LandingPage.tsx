@@ -145,12 +145,13 @@ export default function LandingPage() {
             [Users, "Multi User Access"],
           ].map(([Icon, title], i) => {
             const C: any = Icon;
+            const t = title as string;
 
             return (
               <Card key={i} className="card-gradient border-none p-6">
                 <C className="w-8 h-8" />
 
-                <h3 className="font-black mt-5">{title}</h3>
+                <h3 className="font-black mt-5">{t}</h3>
               </Card>
             );
           })}

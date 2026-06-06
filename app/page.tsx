@@ -666,6 +666,8 @@ export default function LandingPage() {
             [Users, "Multi User Access", "Collaborate with others"],
           ].map(([Icon, title, desc], i) => {
             const C: any = Icon;
+            const t = title as string;
+            const d = desc as string;
             return (
               <motion.div
                 key={i}
@@ -678,8 +680,8 @@ export default function LandingPage() {
                 <div className="w-10 h-10 rounded-xl bg-black/5 dark:bg-white/5 flex items-center justify-center mb-5 group-hover:bg-[#ccff00]/10 transition-colors">
                   <C className="w-5 h-5 text-black/70 dark:text-white group-hover:text-[#ccff00] transition-colors" />
                 </div>
-                <h3 className="font-extrabold text-sm text-[#0c0d0e] dark:text-white">{title}</h3>
-                <p className="text-[11px] text-black/50 dark:text-white/50 font-semibold mt-1">{desc}</p>
+                <h3 className="font-extrabold text-sm text-[#0c0d0e] dark:text-white">{t}</h3>
+                <p className="text-[11px] text-black/50 dark:text-white/50 font-semibold mt-1">{d}</p>
               </motion.div>
             );
           })}

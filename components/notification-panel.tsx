@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button"
 
 type NotificationPanelProps = {
   notifications: Notification[]
-  onRemove: (id: string) => void
+  onRemove: (id: number) => void
 }
 
 const getIcon = (type: Notification["type"]) => {

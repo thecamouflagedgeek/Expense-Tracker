@@ -3,6 +3,8 @@
 import { useState, useEffect } from "react"
 import { motion } from "framer-motion"
 import { useAuth } from "@/contexts/auth-context"
+import { useTransactions } from "@/context/transaction-context"
+import { useCurrency } from "@/context/currency-context"
 import { 
   generateReceiptUploadLink, 
   subscribePendingReceipts, 
@@ -13,21 +15,44 @@ import { PendingReceipt } from "./types"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Textarea } from "@/components/ui/textarea"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList, CommandSeparator } from "@/components/ui/command"
 import { collection, query, where, onSnapshot, Timestamp } from "firebase/firestore"
 import { db } from "@/lib/firebase"
-import { Link2, Clock, Copy, Check, Loader2, AlertTriangle, FileCheck, Eye, Trash2, FileText } from "lucide-react"
+import { 
+  Link2, Clock, Copy, Check, Loader2, AlertTriangle, 
+  FileCheck, Eye, Trash2, FileText, ChevronDown, Pencil, X 
+} from "lucide-react"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 
 export default function ReceiptUploadPage() {
   const { user, loading: authLoading } = useAuth()
+  const { categories, renameCategory } = useTransactions()
+  const { symbol, convertToINR, currency } = useCurrency()
+
   const [loading, setLoading] = useState(false)
   const [generatedLink, setGeneratedLink] = useState<{ linkId: string; uploadUrl: string; expiresAt: any; fallback: boolean } | null>(null)
   const [copied, setCopied] = useState(false)
   const [timeLeft, setTimeLeft] = useState<number | null>(null)
   const [pendingReceipts, setPendingReceipts] = useState<PendingReceipt[]>([])
-  const [previewReceipt, setPreviewReceipt] = useState<PendingReceipt | null>(null)
   const [actioningId, setActioningId] = useState<string | null>(null)
 
+  // Dialog States
+  const [reviewReceipt, setReviewReceipt] = useState<PendingReceipt | null>(null)
+  const [amount, setAmount] = useState("")
+  const [category, setCategory] = useState("")
+  const [categoryOpen, setCategoryOpen] = useState(false)
+  const [categorySearch, setCategorySearch] = useState("")
+  const [notes, setNotes] = useState("")
+  const [dialogError, setDialogError] = useState<string | null>(null)
+  const [editingCat, setEditingCat] = useState<string | null>(null)
+  const [editCatName, setEditCatName] = useState("")
+
+  // Subscribe to final receipts to handle local storage cache sync
   useEffect(() => {
     if (!user) return
     const q = query(
@@ -92,6 +117,7 @@ export default function ReceiptUploadPage() {
     return () => unsub()
   }, [user])
 
+  // Subscribe to pending receipts
   useEffect(() => {
     if (!user) return
     console.log("[Receipt System] Setting up pendingReceipts subscription for owner: " + user.id)
@@ -101,6 +127,7 @@ export default function ReceiptUploadPage() {
     return () => unsub()
   }, [user])
 
+  // Countdown timer for sharing link expiration
   useEffect(() => {
     if (!generatedLink) return
     const interval = setInterval(() => {
@@ -158,30 +185,90 @@ export default function ReceiptUploadPage() {
     }
   }
 
-  const handleApprove = async (receipt: PendingReceipt) => {
-    console.log("[Receipt System] User clicked Approve for receipt: " + receipt.id)
-    setActioningId(receipt.id)
+  const handleRenameCategory = async (oldName: string) => {
     try {
-      await approvePendingReceipt(receipt)
-      console.log("[Receipt System] Approval action finished successfully.")
-    } catch (err) {
-      console.error("[Receipt System] Approval action failed in handler: ", err)
+      setDialogError(null)
+      await renameCategory(oldName, editCatName)
+      if (category === oldName) {
+        setCategory(editCatName.trim())
+      }
+      setEditingCat(null)
+    } catch (err: any) {
+      setDialogError(err.message || "Failed to rename category.")
+    }
+  }
+
+  const availableCategories = Array.from(
+    new Set([...categories, "Transfer"].filter((categoryName) => categoryName && categoryName !== "New Category")),
+  )
+  const normalizedCategorySearch = categorySearch.trim().toLowerCase()
+  const filteredCategories = availableCategories.filter((categoryName) =>
+    categoryName.toLowerCase().includes(normalizedCategorySearch),
+  )
+  const canCreateCategory =
+    categorySearch.trim().length > 0 &&
+    !availableCategories.some((categoryName) => categoryName.toLowerCase() === normalizedCategorySearch)
+
+  const handleApproveSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!reviewReceipt) return
+
+    const enteredAmount = parseFloat(amount)
+    if (isNaN(enteredAmount) || enteredAmount <= 0) {
+      setDialogError("Please enter a valid amount greater than 0.")
+      return
+    }
+
+    if (!category.trim()) {
+      setDialogError("Please select or enter a category.")
+      return
+    }
+
+    setActioningId(reviewReceipt.id)
+    setDialogError(null)
+
+    try {
+      const amountInINR = currency === "INR" ? enteredAmount : convertToINR(enteredAmount)
+
+      await approvePendingReceipt(reviewReceipt, {
+        amount: amountInINR,
+        category: category.trim(),
+        notes: notes.trim(),
+      })
+      setReviewReceipt(null)
+    } catch (err: any) {
+      console.error(err)
+      setDialogError(err.message || "Failed to approve receipt.")
     } finally {
       setActioningId(null)
     }
   }
 
-  const handleReject = async (receiptId: string) => {
-    console.log("[Receipt System] User clicked Reject for receipt: " + receiptId)
-    setActioningId(receiptId)
+  const handleRejectClick = async () => {
+    if (!reviewReceipt) return
+    setActioningId(reviewReceipt.id)
+    setDialogError(null)
     try {
-      await rejectPendingReceipt(receiptId)
-      console.log("[Receipt System] Rejection action finished successfully.")
-    } catch (err) {
-      console.error("[Receipt System] Rejection action failed in handler: ", err)
+      await rejectPendingReceipt(reviewReceipt.id)
+      setReviewReceipt(null)
+    } catch (err: any) {
+      console.error(err)
+      setDialogError(err.message || "Failed to reject receipt.")
     } finally {
       setActioningId(null)
     }
+  }
+
+  const formatDateTime = (timestamp: any) => {
+    if (!timestamp) return ""
+    const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp)
+    return date.toLocaleString("en-US", {
+      month: "short",
+      day: "numeric",
+      hour: "numeric",
+      minute: "2-digit",
+      hour12: true
+    })
   }
 
   const formatTime = (seconds: number) => {
@@ -216,7 +303,7 @@ export default function ReceiptUploadPage() {
       initial={{ opacity: 0, y: 15 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4 }}
-      className="container mx-auto px-4 md:px-8 pt-6 md:pt-8 pb-8 max-w-4xl"
+      className="container mx-auto px-4 md:px-8 pt-6 md:pt-8 pb-8 max-w-5xl"
     >
       <div className="mb-8">
         <h1 className="text-3xl font-black tracking-tight text-black flex items-center gap-2">
@@ -365,11 +452,11 @@ match /pendingReceipts/{receiptId} {
               </div>
               <div className="flex items-start gap-2.5">
                 <div className="w-5 h-5 rounded-full bg-[#ccff00] text-black font-black flex items-center justify-center flex-shrink-0">3</div>
-                <p>They select a file or take a photo to send it for your approval.</p>
+                <p>They take a photo or select an image to submit it. Uploaders enter no financial amounts.</p>
               </div>
               <div className="flex items-start gap-2.5">
                 <div className="w-5 h-5 rounded-full bg-[#ccff00] text-black font-black flex items-center justify-center flex-shrink-0">4</div>
-                <p>Review and approve uploads below to add them permanently.</p>
+                <p>Review details, input Amount/Category/Notes, and Approve to create the transaction.</p>
               </div>
             </CardContent>
           </Card>
@@ -377,102 +464,105 @@ match /pendingReceipts/{receiptId} {
       </div>
 
       {pendingReceipts.length > 0 && (
-        <Card className="border border-black/5 bg-white/70 backdrop-blur rounded-3xl shadow-xl overflow-hidden mt-8">
-          <CardHeader className="border-b border-black/5 bg-black/[0.01] px-6 py-4">
-            <CardTitle className="text-lg font-bold text-black">
+        <div className="mt-8">
+          <div className="mb-4">
+            <h2 className="text-xl font-bold text-black flex items-center gap-2">
+              <Clock className="w-5 h-5 text-black" />
               Pending Approval Requests
-            </CardTitle>
-            <CardDescription className="text-xs">
-              Review and approve or reject receipts uploaded via sharing links.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="p-6">
-            <div className="space-y-3">
-              {pendingReceipts.map((receipt) => (
-                <div
-                  key={receipt.id}
-                  className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 p-4 rounded-2xl bg-white border border-black/5 shadow-sm"
-                >
-                  <div className="min-w-0 flex-1">
-                    <p className="text-sm font-bold text-black truncate">{receipt.fileName}</p>
-                    <p className="text-[10px] text-black/50 font-semibold mt-0.5">
-                      {receipt.description || "No description"} · {(receipt.fileSize / 1024).toFixed(1)} KB
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="text-black/50 hover:text-black hover:bg-black/5 rounded-full w-8 h-8"
-                      onClick={() => setPreviewReceipt(receipt)}
-                    >
-                      <Eye className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      disabled={actioningId !== null}
-                      className="text-red-500 hover:text-red-600 hover:bg-red-50 rounded-full w-8 h-8"
-                      onClick={() => handleReject(receipt.id)}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      disabled={actioningId !== null}
-                      className="button-gradient text-xs h-9 px-4 rounded-xl text-black hover:opacity-90 font-bold"
-                      onClick={() => handleApprove(receipt)}
-                    >
-                      {actioningId === receipt.id ? (
-                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                      ) : (
-                        "Approve"
-                      )}
-                    </Button>
+            </h2>
+            <p className="text-xs text-black/50 font-semibold mt-0.5">
+              Review details and approve or reject receipts uploaded via sharing links.
+            </p>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+            {pendingReceipts.map((receipt) => (
+              <motion.div
+                key={receipt.id}
+                whileHover={{ y: -4 }}
+                onClick={() => {
+                  setReviewReceipt(receipt)
+                  setAmount("")
+                  setCategory("")
+                  setCategorySearch("")
+                  setNotes(receipt.description || "")
+                  setDialogError(null)
+                }}
+                className="group border border-black/5 bg-white rounded-3xl shadow-sm hover:shadow-md cursor-pointer overflow-hidden transition-all duration-300 flex flex-col h-full"
+              >
+                <div className="h-40 w-full bg-black/[0.02] relative flex items-center justify-center border-b border-black/5 overflow-hidden">
+                  {receipt.fileType.startsWith("image/") ? (
+                    <img
+                      src={receipt.imageData}
+                      alt={receipt.fileName}
+                      className="w-full h-full object-cover group-hover:scale-[1.03] transition-transform duration-500"
+                    />
+                  ) : (
+                    <div className="flex flex-col items-center justify-center p-4 text-black/40">
+                      <FileText className="w-12 h-12 stroke-[1.5]" />
+                      <span className="text-[9px] font-bold mt-1 uppercase tracking-wider">PDF Document</span>
+                    </div>
+                  )}
+                  <div className="absolute top-3 right-3">
+                    <Badge className="bg-amber-500 hover:bg-amber-500 text-white text-[9px] font-extrabold uppercase border-none px-2 py-0.5 rounded-full tracking-wider shadow-sm">
+                      Pending
+                    </Badge>
                   </div>
                 </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
+
+                <div className="p-4 flex-1 flex flex-col justify-between">
+                  <div>
+                    <h3 className="text-xs font-black text-black truncate mb-1 group-hover:text-black/80 transition-colors">
+                      {receipt.fileName}
+                    </h3>
+                    <p className="text-[10px] text-black/60 font-semibold line-clamp-2 min-h-[2.5rem]">
+                      {receipt.description || "No description provided."}
+                    </p>
+                  </div>
+
+                  <div className="border-t border-black/5 pt-3 mt-3 flex items-center justify-between text-[9px] text-black/40 font-bold uppercase tracking-wider">
+                    <span>{(receipt.fileSize / 1024).toFixed(1)} KB</span>
+                    <span>{formatDateTime(receipt.uploadedAt)}</span>
+                  </div>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        </div>
       )}
 
-      <Dialog open={!!previewReceipt} onOpenChange={(open) => !open && setPreviewReceipt(null)}>
-        <DialogContent className="sm:max-w-[600px] border border-black/5 bg-white rounded-3xl p-6 shadow-2xl">
+      {/* Review Dialog */}
+      <Dialog open={!!reviewReceipt} onOpenChange={(open) => !open && setReviewReceipt(null)}>
+        <DialogContent className="sm:max-w-[550px] w-[calc(100%-2rem)] sm:w-full max-h-[calc(100vh-2rem)] sm:max-h-[90vh] overflow-y-auto border border-black/5 bg-white rounded-3xl p-6 shadow-2xl z-[999]">
           <DialogHeader>
-            <DialogTitle className="text-lg font-black text-black">
-              Receipt File Preview
+            <DialogTitle className="text-lg font-black text-black flex items-center gap-2">
+              <FileCheck className="w-5 h-5 text-black" />
+              Review & Approve Receipt
             </DialogTitle>
             <DialogDescription className="text-xs text-black/50">
-              Review receipt details before approval.
+              Only approved receipts create transaction records. Enter details below.
             </DialogDescription>
           </DialogHeader>
 
-          {previewReceipt && (
+          {reviewReceipt && (
             <div className="flex flex-col gap-4 mt-2">
-              <div className="flex justify-between items-center bg-black/[0.01] border border-black/5 rounded-2xl p-3 text-xs">
-                <div>
-                  <p className="font-bold text-black">{previewReceipt.fileName}</p>
-                  <p className="text-black/40 font-mono text-[10px] mt-0.5">Type: {previewReceipt.fileType}</p>
-                </div>
-                <Badge variant="secondary" className="bg-black/5 text-black border-none text-[10px]">
-                  {(previewReceipt.fileSize / 1024).toFixed(1)} KB
-                </Badge>
-              </div>
-
-              <div className="w-full flex justify-center bg-black/[0.02] border border-black/5 rounded-3xl overflow-hidden p-4 max-h-[350px]">
-                {previewReceipt.fileType.startsWith("image/") ? (
+              <div className="w-full flex justify-center bg-black/[0.02] border border-black/5 rounded-3xl overflow-hidden p-4 max-h-[250px] relative">
+                {reviewReceipt.fileType.startsWith("image/") ? (
                   <img
-                    src={previewReceipt.imageData}
+                    src={reviewReceipt.imageData}
                     alt="Receipt preview"
-                    className="max-w-full max-h-full object-contain rounded-2xl"
+                    className="max-w-full max-h-full object-contain rounded-2xl cursor-pointer hover:opacity-90"
+                    onClick={() => {
+                      const w = window.open()
+                      if (w) w.document.write(`<img src="${reviewReceipt.imageData}" style="max-width:100%; max-height:100%; display:block; margin:auto;" />`)
+                    }}
                   />
                 ) : (
-                  <div className="flex flex-col items-center justify-center p-8 text-black/50">
+                  <div className="flex flex-col items-center justify-center p-8 text-black/50 w-full">
                     <FileText className="w-16 h-16 opacity-60 mb-2" />
                     <p className="text-xs font-bold">PDF Document</p>
                     <a
-                      href={previewReceipt.imageData}
-                      download={previewReceipt.fileName}
+                      href={reviewReceipt.imageData}
+                      download={reviewReceipt.fileName}
                       className="text-xs text-blue-600 underline font-semibold mt-2"
                     >
                       Download to view PDF
@@ -480,6 +570,204 @@ match /pendingReceipts/{receiptId} {
                   </div>
                 )}
               </div>
+
+              <div className="flex justify-between items-center bg-black/[0.01] border border-black/5 rounded-2xl p-3 text-[10px] font-bold text-black/50 uppercase tracking-wider">
+                <div>
+                  <p className="text-black truncate max-w-[200px]">{reviewReceipt.fileName}</p>
+                  <p className="font-mono text-[9px] mt-0.5">Uploaded: {formatDateTime(reviewReceipt.uploadedAt)}</p>
+                </div>
+                <Badge variant="secondary" className="bg-black/5 text-black border-none text-[9px] font-black">
+                  {(reviewReceipt.fileSize / 1024).toFixed(1)} KB
+                </Badge>
+              </div>
+
+              <form onSubmit={handleApproveSubmit} className="space-y-4 pt-2 border-t border-black/5">
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label htmlFor="dialog-amount" className="text-right text-black/75 font-semibold text-xs">
+                    Amount <span className="text-[#0c0d0e] font-black">({symbol})</span>
+                  </Label>
+                  <div className="col-span-3 relative">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-black text-black/50 select-none">
+                      {symbol}
+                    </span>
+                    <Input
+                      id="dialog-amount"
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      value={amount}
+                      onChange={(e) => setAmount(e.target.value)}
+                      className="pl-7 bg-black/[0.02] border border-black/5 text-black hover:bg-black/[0.04] focus:bg-white focus:ring-2 focus:ring-black rounded-xl text-xs h-10 font-bold"
+                      placeholder="0.00"
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label htmlFor="dialog-category" className="text-right text-black/75 font-semibold text-xs">
+                    Category
+                  </Label>
+                  <Popover
+                    open={categoryOpen}
+                    onOpenChange={(open) => {
+                      setCategoryOpen(open)
+                      if (open) {
+                        setCategorySearch(category)
+                      }
+                    }}
+                  >
+                    <PopoverTrigger asChild>
+                      <Button
+                        id="dialog-category"
+                        type="button"
+                        variant="outline"
+                        className="col-span-3 justify-between bg-black/[0.02] border border-black/5 text-black hover:bg-black/[0.04] focus:bg-white focus:ring-2 focus:ring-black rounded-xl text-xs h-10 font-bold"
+                      >
+                        <span className={`truncate ${!category ? "text-black/40" : "text-black"}`}>
+                          {category || "Select or type a category"}
+                        </span>
+                        <ChevronDown className="ml-2 h-4 w-4 text-black/40" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0 bg-white border border-black/5 rounded-2xl shadow-2xl z-[9999]">
+                      <Command shouldFilter={false}>
+                        <CommandInput
+                          value={categorySearch}
+                          onValueChange={setCategorySearch}
+                          placeholder="Type a category"
+                        />
+                        <CommandList>
+                          <CommandEmpty>No category found.</CommandEmpty>
+                          <CommandGroup heading="Categories">
+                            {filteredCategories.map((cat) => (
+                              <CommandItem
+                                key={cat}
+                                value={cat}
+                                onSelect={() => {
+                                  if (editingCat === cat) return
+                                  setCategory(cat)
+                                  setCategorySearch(cat)
+                                  setCategoryOpen(false)
+                                }}
+                                className="flex items-center justify-between cursor-pointer font-semibold text-xs py-2 px-3 group"
+                              >
+                                {editingCat === cat ? (
+                                  <div className="flex items-center gap-1.5 w-full" onClick={(e) => e.stopPropagation()}>
+                                    <input
+                                      type="text"
+                                      value={editCatName}
+                                      onChange={(e) => setEditCatName(e.target.value)}
+                                      className="flex-1 bg-black/[0.04] border border-black/10 px-2 py-0.5 rounded text-[11px] font-semibold text-black focus:outline-none focus:ring-1 focus:ring-black"
+                                      autoFocus
+                                    />
+                                    <button
+                                      type="button"
+                                      onClick={() => handleRenameCategory(cat)}
+                                      className="p-1 text-emerald-600 hover:text-emerald-700 bg-emerald-50 hover:bg-emerald-100 rounded"
+                                    >
+                                      <Check className="w-3 h-3" />
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => setEditingCat(null)}
+                                      className="p-1 text-red-600 hover:text-red-700 bg-red-50 hover:bg-red-100 rounded"
+                                    >
+                                      <X className="w-3 h-3" />
+                                    </button>
+                                  </div>
+                                ) : (
+                                  <>
+                                    <span className="truncate">{cat}</span>
+                                    <button
+                                      type="button"
+                                      onClick={(e) => {
+                                        e.stopPropagation()
+                                        setEditingCat(cat)
+                                        setEditCatName(cat)
+                                      }}
+                                      className="opacity-0 group-hover:opacity-100 p-1 text-black/40 hover:text-black hover:bg-black/5 rounded transition-opacity"
+                                    >
+                                      <Pencil className="w-3 h-3" />
+                                    </button>
+                                  </>
+                                )}
+                              </CommandItem>
+                            ))}
+                          </CommandGroup>
+                          {canCreateCategory && (
+                            <>
+                              <CommandSeparator />
+                              <CommandGroup heading="Create new">
+                                <CommandItem
+                                  key={`create-${categorySearch.trim()}`}
+                                  value={categorySearch.trim()}
+                                  onSelect={() => {
+                                    const nextCategory = categorySearch.trim()
+                                    setCategory(nextCategory)
+                                    setCategorySearch(nextCategory)
+                                    setCategoryOpen(false)
+                                  }}
+                                  className="cursor-pointer font-semibold text-xs py-2 px-3 text-emerald-700"
+                                >
+                                  + Add "{categorySearch.trim()}"
+                                </CommandItem>
+                              </CommandGroup>
+                            </>
+                          )}
+                        </CommandList>
+                      </Command>
+                    </PopoverContent>
+                  </Popover>
+                </div>
+
+                <div className="grid grid-cols-4 items-start gap-4">
+                  <Label htmlFor="dialog-notes" className="text-right text-black/75 font-semibold text-xs mt-2.5">
+                    Notes
+                  </Label>
+                  <Textarea
+                    id="dialog-notes"
+                    value={notes}
+                    onChange={(e) => setNotes(e.target.value)}
+                    className="col-span-3 bg-black/[0.02] border border-black/5 text-black hover:bg-black/[0.04] focus:bg-white focus:ring-2 focus:ring-black rounded-2xl p-4 text-xs font-semibold placeholder:text-black/30 min-h-[60px]"
+                    placeholder="Optional transaction description"
+                  />
+                </div>
+
+                {dialogError && (
+                  <Alert variant="destructive" className="bg-red-50 border-red-200 text-red-700 rounded-2xl p-3">
+                    <AlertTitle className="font-bold text-xs">Error</AlertTitle>
+                    <AlertDescription className="text-[10px] mt-0.5">{dialogError}</AlertDescription>
+                  </Alert>
+                )}
+
+                <div className="flex justify-between items-center gap-3 pt-3 border-t border-black/5">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    disabled={actioningId !== null}
+                    onClick={handleRejectClick}
+                    className="flex-1 border-red-100 text-red-500 hover:bg-red-50 rounded-2xl text-xs font-extrabold h-11 uppercase tracking-wider"
+                  >
+                    {actioningId === reviewReceipt.id && !amount ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      "Reject Receipt"
+                    )}
+                  </Button>
+                  <Button
+                    type="submit"
+                    disabled={actioningId !== null}
+                    className="flex-1 button-gradient text-[#0c0d0e] rounded-2xl text-xs font-extrabold h-11 uppercase tracking-wider animate-pulse hover:animate-none"
+                  >
+                    {actioningId === reviewReceipt.id && amount ? (
+                      <Loader2 className="h-4 w-4 animate-spin animate-none" />
+                    ) : (
+                      "Approve & Create"
+                    )}
+                  </Button>
+                </div>
+              </form>
             </div>
           )}
         </DialogContent>

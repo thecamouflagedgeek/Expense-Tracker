@@ -1,5 +1,5 @@
 import { db } from "@/lib/firebase"
-import { doc, getDoc, setDoc, Timestamp, collection, addDoc, query, where, onSnapshot, deleteDoc } from "firebase/firestore"
+import { doc, getDoc, setDoc, Timestamp, collection, addDoc, query, where, onSnapshot, deleteDoc, updateDoc } from "firebase/firestore"
 import { UploadLink, PendingReceipt } from "./types"
 
 function getMillis(timestamp: any): number {
@@ -202,16 +202,36 @@ export function subscribePendingReceipts(ownerId: string, callback: (receipts: P
   }
 }
 
-export async function approvePendingReceipt(receipt: PendingReceipt) {
+export async function approvePendingReceipt(
+  receipt: PendingReceipt,
+  transactionDetails: { amount: number; category: string; notes?: string }
+) {
   console.log("[Receipt System] Approving pending receipt: " + receipt.id)
   try {
+    // 1. Create a transaction document in Firestore
+    const transactionData = {
+      title: receipt.fileName || "Receipt Transaction",
+      amount: -Math.abs(transactionDetails.amount), // Expenses are negative
+      type: "expense",
+      category: transactionDetails.category,
+      date: new Date().toISOString(),
+      description: transactionDetails.notes || receipt.description || "",
+      userId: receipt.ownerId,
+      isArchived: false,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    }
+    console.log("[Receipt System] Adding transaction to Firestore: ", transactionData)
+    await addDoc(collection(db, "transactions"), transactionData)
+
+    // 2. Add final approved receipt document to receipts collection
     const finalReceiptData = {
       ownerId: receipt.ownerId,
       fileName: receipt.fileName,
       fileType: receipt.fileType,
       fileSize: receipt.fileSize,
       imageData: receipt.imageData,
-      description: receipt.description,
+      description: transactionDetails.notes || receipt.description || "",
       uploadedAt: receipt.uploadedAt,
       uploadedViaLink: true,
       linkId: receipt.linkId
@@ -219,9 +239,12 @@ export async function approvePendingReceipt(receipt: PendingReceipt) {
     console.log("[Receipt System] Adding final receipt to Firestore receipts collection")
     const docRef = await addDoc(collection(db, "receipts"), finalReceiptData)
     console.log("[Receipt System] Final receipt added successfully to Firestore. ID: " + docRef.id)
-    console.log("[Receipt System] Deleting pending receipt document: " + receipt.id)
-    await deleteDoc(doc(db, "pendingReceipts", receipt.id))
-    console.log("[Receipt System] Pending receipt deleted from Firestore.")
+
+    // 3. Mark the pending receipt status as approved instead of deleting it
+    console.log("[Receipt System] Marking pending receipt status as approved: " + receipt.id)
+    await updateDoc(doc(db, "pendingReceipts", receipt.id), { status: "approved" })
+    console.log("[Receipt System] Pending receipt status updated to approved in Firestore.")
+
     if (typeof window !== "undefined") {
       const permanentReceipt = {
         id: docRef.id,
@@ -229,7 +252,7 @@ export async function approvePendingReceipt(receipt: PendingReceipt) {
         fileName: receipt.fileName,
         fileType: receipt.fileType,
         fileSize: receipt.fileSize,
-        description: receipt.description,
+        description: transactionDetails.notes || receipt.description || "",
         uploadedAt: receipt.uploadedAt instanceof Timestamp ? receipt.uploadedAt.toDate().toISOString() : new Date().toISOString(),
         fileData: receipt.imageData,
       }
@@ -251,9 +274,9 @@ export async function approvePendingReceipt(receipt: PendingReceipt) {
 export async function rejectPendingReceipt(receiptId: string) {
   console.log("[Receipt System] Rejecting pending receipt: " + receiptId)
   try {
-    console.log("[Receipt System] Deleting pending receipt document: " + receiptId)
-    await deleteDoc(doc(db, "pendingReceipts", receiptId))
-    console.log("[Receipt System] Pending receipt deleted.")
+    console.log("[Receipt System] Marking pending receipt status as rejected: " + receiptId)
+    await updateDoc(doc(db, "pendingReceipts", receiptId), { status: "rejected" })
+    console.log("[Receipt System] Pending receipt marked as rejected.")
   } catch (error) {
     console.error("[Receipt System] Error during receipt rejection: ", error)
     throw error
