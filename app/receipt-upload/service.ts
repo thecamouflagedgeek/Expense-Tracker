@@ -1,7 +1,7 @@
 import { db, storage } from "@/lib/firebase"
-import { doc, getDoc, setDoc, Timestamp, collection, addDoc, query, where, onSnapshot, updateDoc } from "firebase/firestore"
+import { doc, getDoc, setDoc, Timestamp, collection, addDoc, query, where, onSnapshot, deleteDoc } from "firebase/firestore"
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage"
-import { UploadLink, PendingUploader } from "./types"
+import { UploadLink, PendingReceipt } from "./types"
 
 function getMillis(timestamp: any): number {
   if (!timestamp) return 0
@@ -44,6 +44,7 @@ function saveLocalLink(linkId: string, linkData: any) {
 }
 
 export async function generateReceiptUploadLink(userId: string) {
+  console.log("[Receipt System] generateReceiptUploadLink started for user: " + userId)
   if (!userId) {
     throw new Error("User must be authenticated")
   }
@@ -62,7 +63,9 @@ export async function generateReceiptUploadLink(userId: string) {
   try {
     const linkDocRef = doc(db, "uploadLinks", linkId)
     await setDoc(linkDocRef, linkData)
+    console.log("[Receipt System] Link generated and saved to Firestore: " + linkId)
   } catch (error) {
+    console.error("[Receipt System] Firestore link write failed, using local storage fallback", error)
     fallback = true
   }
   const origin = typeof window !== "undefined" ? window.location.origin : ""
@@ -76,6 +79,7 @@ export async function generateReceiptUploadLink(userId: string) {
 }
 
 export async function validateUploadLink(linkId: string): Promise<{ valid: boolean; ownerId?: string; fallback?: boolean }> {
+  console.log("[Receipt System] validateUploadLink started for link: " + linkId)
   if (!linkId) {
     return { valid: false }
   }
@@ -85,12 +89,15 @@ export async function validateUploadLink(linkId: string): Promise<{ valid: boole
     if (docSnap.exists()) {
       const data = docSnap.data() as UploadLink
       if (data.status !== "active") {
+        console.log("[Receipt System] Link status is not active: " + data.status)
         return { valid: false }
       }
       const expiresAtMillis = getMillis(data.expiresAt)
       if (expiresAtMillis <= Date.now()) {
+        console.log("[Receipt System] Link has expired at: " + expiresAtMillis)
         return { valid: false }
       }
+      console.log("[Receipt System] Link validated successfully against Firestore. Owner: " + data.ownerId)
       return {
         valid: true,
         ownerId: data.ownerId,
@@ -98,6 +105,7 @@ export async function validateUploadLink(linkId: string): Promise<{ valid: boole
       }
     }
   } catch (error) {
+    console.error("[Receipt System] Firestore read failed during validation, trying fallback", error)
   }
   const localLinks = getLocalLinks()
   const localData = localLinks[linkId]
@@ -108,12 +116,14 @@ export async function validateUploadLink(linkId: string): Promise<{ valid: boole
     if (localData.expiresAt <= Date.now()) {
       return { valid: false }
     }
+    console.log("[Receipt System] Link validated successfully against Local Storage. Owner: " + localData.ownerId)
     return {
       valid: true,
       ownerId: localData.ownerId,
       fallback: true,
     }
   }
+  console.log("[Receipt System] Link validation failed.")
   return { valid: false }
 }
 
@@ -123,195 +133,123 @@ export async function uploadReceiptToFirebase(
   file: File,
   description: string
 ) {
+  console.log("[Receipt System] uploadReceiptToFirebase started. File size: " + file.size)
   const fileExtension = file.name.includes(".") ? file.name.substring(file.name.lastIndexOf(".")) : ""
   const generatedFileName = `${crypto.randomUUID()}${fileExtension}`
+  const storagePath = `receipts/${ownerId}/${generatedFileName}`
+  console.log("[Receipt System] Target storage path: " + storagePath)
   
   let receiptUrl = ""
-  let fallbackUsed = false
-  let fileBase64 = ""
-
   try {
-    const storageRef = ref(storage, `receipts/${ownerId}/${generatedFileName}`)
+    const storageRef = ref(storage, storagePath)
     const snapshot = await uploadBytes(storageRef, file)
     receiptUrl = await getDownloadURL(snapshot.ref)
-  } catch (error) {
-    fileBase64 = await new Promise<string>((resolve, reject) => {
-      const reader = new FileReader()
-      reader.onload = () => resolve(reader.result as string)
-      reader.onerror = reject
-      reader.readAsDataURL(file)
-    })
-    receiptUrl = fileBase64
-    fallbackUsed = true
+    console.log("[Receipt System] File uploaded successfully to Storage. URL: " + receiptUrl)
+  } catch (storageError: any) {
+    console.error("[Receipt System] Firebase Storage upload failed.", storageError)
+    throw new Error("Storage upload failed: " + (storageError.message || storageError))
   }
 
-  const receiptData = {
+  const receiptId = crypto.randomUUID()
+  const pendingReceiptData: PendingReceipt = {
+    id: receiptId,
     ownerId,
+    linkId,
     fileName: file.name,
     fileType: file.type,
     fileSize: file.size,
     receiptUrl,
     description,
     uploadedAt: Timestamp.now(),
-    uploadedViaLink: true,
-    linkId,
+    status: "pending"
   }
 
+  console.log("[Receipt System] Writing pending receipt document to Firestore: " + receiptId)
   try {
-    await addDoc(collection(db, "receipts"), receiptData)
-  } catch (error) {
-    if (typeof window !== "undefined") {
-      const localReceipt = {
-        id: crypto.randomUUID(),
-        userId: ownerId,
-        fileName: file.name,
-        fileType: file.type,
-        fileSize: file.size,
-        description,
-        uploadedAt: new Date().toISOString(),
-        fileData: fileBase64 || await new Promise<string>((resolve, reject) => {
-          const reader = new FileReader()
-          reader.onload = () => resolve(reader.result as string)
-          reader.onerror = reject
-          reader.readAsDataURL(file)
-        })
-      }
-      const existing = JSON.parse(localStorage.getItem("ctrlfund_receipts") || "[]")
-      localStorage.setItem("ctrlfund_receipts", JSON.stringify([...existing, localReceipt]))
-      window.dispatchEvent(new Event("receipts-updated"))
-    }
+    await setDoc(doc(db, "pendingReceipts", receiptId), pendingReceiptData)
+    console.log("[Receipt System] Pending receipt doc written successfully to Firestore.")
+  } catch (firestoreError: any) {
+    console.error("[Receipt System] Failed to write pending receipt document to Firestore.", firestoreError)
+    throw new Error("Firestore doc write failed: " + (firestoreError.message || firestoreError))
   }
 
-  return { success: true, fallbackUsed }
+  return { success: true }
 }
 
-function getLocalUploaders(): Record<string, any> {
-  if (typeof window === "undefined") return {}
-  const data = localStorage.getItem("ctrlfund_pending_uploaders")
-  return data ? JSON.parse(data) : {}
-}
-
-export async function requestUploaderAccess(linkId: string, ownerId: string, name: string) {
-  const uploaderId = crypto.randomUUID()
-  const uploaderData: PendingUploader = {
-    id: uploaderId,
-    linkId,
-    ownerId,
-    name,
-    status: "pending",
-    createdAt: Timestamp.now(),
-  }
-  try {
-    await setDoc(doc(db, "pendingUploaders", uploaderId), uploaderData)
-  } catch (error) {
-    if (typeof window !== "undefined") {
-      const local = getLocalUploaders()
-      local[uploaderId] = {
-        ...uploaderData,
-        createdAt: uploaderData.createdAt.toMillis()
-      }
-      localStorage.setItem("ctrlfund_pending_uploaders", JSON.stringify(local))
-      window.dispatchEvent(new Event("pending-uploaders-updated"))
-    }
-  }
-  return uploaderId
-}
-
-export function subscribePendingUploaders(ownerId: string, callback: (uploaders: PendingUploader[]) => void) {
-  let unsubscribed = false
-  let firestoreUnsubscribe: (() => void) | null = null
-  const checkLocal = () => {
-    const local = getLocalUploaders()
-    const filtered = Object.values(local).filter(
-      (u: any) => u.ownerId === ownerId && u.status === "pending"
-    )
-    callback(filtered.map((u: any) => ({
-      ...u,
-      createdAt: Timestamp.fromMillis(u.createdAt)
-    })) as PendingUploader[])
-  }
+export function subscribePendingReceipts(ownerId: string, callback: (receipts: PendingReceipt[]) => void) {
+  console.log("[Receipt System] Subscribing to pending receipts for owner: " + ownerId)
   try {
     const q = query(
-      collection(db, "pendingUploaders"),
+      collection(db, "pendingReceipts"),
       where("ownerId", "==", ownerId),
       where("status", "==", "pending")
     )
-    firestoreUnsubscribe = onSnapshot(q, (snapshot) => {
-      const uploaders: PendingUploader[] = []
+    return onSnapshot(q, (snapshot) => {
+      const receipts: PendingReceipt[] = []
       snapshot.forEach((doc) => {
-        uploaders.push(doc.data() as PendingUploader)
+        receipts.push(doc.data() as PendingReceipt)
       })
-      callback(uploaders)
+      console.log(`[Receipt System] Snapshot update received: ${receipts.length} pending receipts.`)
+      callback(receipts)
     }, (err) => {
-      if (!unsubscribed) {
-        checkLocal()
-        window.addEventListener("pending-uploaders-updated", checkLocal)
-      }
+      console.error("[Receipt System] Error in pendingReceipts snapshot subscription: ", err)
     })
   } catch (error) {
-    checkLocal()
-    window.addEventListener("pending-uploaders-updated", checkLocal)
-  }
-  return () => {
-    unsubscribed = true
-    if (firestoreUnsubscribe) firestoreUnsubscribe()
-    if (typeof window !== "undefined") {
-      window.removeEventListener("pending-uploaders-updated", checkLocal)
-    }
+    console.error("[Receipt System] Failed to initialize pendingReceipts snapshot subscription: ", error)
+    return () => {}
   }
 }
 
-export async function respondToUploaderAccess(uploaderId: string, approve: boolean) {
-  const status = approve ? "approved" : "rejected"
+export async function approvePendingReceipt(receipt: PendingReceipt) {
+  console.log("[Receipt System] Approving pending receipt: " + receipt.id)
   try {
-    await updateDoc(doc(db, "pendingUploaders", uploaderId), { status })
-  } catch (error) {
-    const local = getLocalUploaders()
-    if (local[uploaderId]) {
-      local[uploaderId].status = status
-      localStorage.setItem("ctrlfund_pending_uploaders", JSON.stringify(local))
-      window.dispatchEvent(new Event("pending-uploaders-updated"))
+    const finalReceiptData = {
+      ownerId: receipt.ownerId,
+      fileName: receipt.fileName,
+      fileType: receipt.fileType,
+      fileSize: receipt.fileSize,
+      receiptUrl: receipt.receiptUrl,
+      description: receipt.description,
+      uploadedAt: receipt.uploadedAt,
+      uploadedViaLink: true,
+      linkId: receipt.linkId
     }
+    console.log("[Receipt System] Adding final receipt to Firestore receipts collection")
+    await addDoc(collection(db, "receipts"), finalReceiptData)
+    console.log("[Receipt System] Final receipt added successfully to Firestore.")
+    console.log("[Receipt System] Deleting pending receipt document: " + receipt.id)
+    await deleteDoc(doc(db, "pendingReceipts", receipt.id))
+    console.log("[Receipt System] Pending receipt deleted from Firestore.")
+    if (typeof window !== "undefined") {
+      const permanentReceipt = {
+        id: receipt.id,
+        userId: receipt.ownerId,
+        fileName: receipt.fileName,
+        fileType: receipt.fileType,
+        fileSize: receipt.fileSize,
+        description: receipt.description,
+        uploadedAt: receipt.uploadedAt instanceof Timestamp ? receipt.uploadedAt.toDate().toISOString() : new Date().toISOString(),
+        fileData: receipt.receiptUrl,
+      }
+      const existing = JSON.parse(localStorage.getItem("ctrlfund_receipts") || "[]")
+      localStorage.setItem("ctrlfund_receipts", JSON.stringify([...existing, permanentReceipt]))
+      window.dispatchEvent(new Event("receipts-updated"))
+      console.log("[Receipt System] Permanent receipt saved to local storage.")
+    }
+  } catch (error) {
+    console.error("[Receipt System] Error during receipt approval: ", error)
+    throw error
   }
 }
 
-export function subscribeUploaderStatus(uploaderId: string, callback: (uploader: PendingUploader | null) => void) {
-  let unsubscribed = false
-  let firestoreUnsubscribe: (() => void) | null = null
-  const checkLocal = () => {
-    const local = getLocalUploaders()
-    const found = local[uploaderId]
-    if (found) {
-      callback({
-        ...found,
-        createdAt: Timestamp.fromMillis(found.createdAt)
-      } as PendingUploader)
-    } else {
-      callback(null)
-    }
-  }
+export async function rejectPendingReceipt(receiptId: string) {
+  console.log("[Receipt System] Rejecting pending receipt: " + receiptId)
   try {
-    firestoreUnsubscribe = onSnapshot(doc(db, "pendingUploaders", uploaderId), (snapshot) => {
-      if (snapshot.exists()) {
-        callback(snapshot.data() as PendingUploader)
-      } else {
-        checkLocal()
-      }
-    }, (err) => {
-      if (!unsubscribed) {
-        checkLocal()
-        window.addEventListener("pending-uploaders-updated", checkLocal)
-      }
-    })
+    console.log("[Receipt System] Deleting pending receipt document: " + receiptId)
+    await deleteDoc(doc(db, "pendingReceipts", receiptId))
+    console.log("[Receipt System] Pending receipt deleted.")
   } catch (error) {
-    checkLocal()
-    window.addEventListener("pending-uploaders-updated", checkLocal)
-  }
-  return () => {
-    unsubscribed = true
-    if (firestoreUnsubscribe) firestoreUnsubscribe()
-    if (typeof window !== "undefined") {
-      window.removeEventListener("pending-uploaders-updated", checkLocal)
-    }
+    console.error("[Receipt System] Error during receipt rejection: ", error)
+    throw error
   }
 }

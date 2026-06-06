@@ -7,11 +7,16 @@ export type UploadLink = {
   createdAt: Timestamp
   expiresAt: Timestamp
 }
-export type PendingUploader = {
+
+export type PendingReceipt = {
   id: string
-  linkId: string
   ownerId: string
-  name: string
+  linkId: string
+  fileName: string
+  fileType: string
+  fileSize: number
+  receiptUrl: string
+  description: string
+  uploadedAt: Timestamp
   status: "pending" | "approved" | "rejected"
-  createdAt: Timestamp
 }
