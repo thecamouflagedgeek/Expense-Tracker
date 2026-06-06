@@ -1,7 +1,6 @@
 import { initializeApp, getApps } from "firebase/app"
 import { browserLocalPersistence, getAuth, setPersistence } from "firebase/auth"
 import { getFirestore } from "firebase/firestore"
-import { getStorage } from "firebase/storage"
 
 const requiredEnv = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
@@ -31,11 +30,11 @@ const firebaseConfig = {
 
 const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0]
 
-export const auth = getAuth(app)
+const auth = getAuth(app)
 if (typeof window !== "undefined") {
   void setPersistence(auth, browserLocalPersistence)
 }
-export const db = getFirestore(app)
-export const storage = getStorage(app)
+const db = getFirestore(app)
 
+export { auth, db }
 export default app

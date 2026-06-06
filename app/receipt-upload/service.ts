@@ -1,6 +1,5 @@
-import { db, storage } from "@/lib/firebase"
+import { db } from "@/lib/firebase"
 import { doc, getDoc, setDoc, Timestamp, collection, addDoc, query, where, onSnapshot, deleteDoc } from "firebase/firestore"
-import { ref, uploadBytes, getDownloadURL } from "firebase/storage"
 import { UploadLink, PendingReceipt } from "./types"
 
 function getMillis(timestamp: any): number {
@@ -127,6 +126,15 @@ export async function validateUploadLink(linkId: string): Promise<{ valid: boole
   return { valid: false }
 }
 
+function fileToBase64(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = () => resolve(reader.result as string)
+    reader.onerror = (error) => reject(error)
+    reader.readAsDataURL(file)
+  })
+}
+
 export async function uploadReceiptToFirebase(
   ownerId: string,
   linkId: string,
@@ -134,20 +142,14 @@ export async function uploadReceiptToFirebase(
   description: string
 ) {
   console.log("[Receipt System] uploadReceiptToFirebase started. File size: " + file.size)
-  const fileExtension = file.name.includes(".") ? file.name.substring(file.name.lastIndexOf(".")) : ""
-  const generatedFileName = `${crypto.randomUUID()}${fileExtension}`
-  const storagePath = `receipts/${ownerId}/${generatedFileName}`
-  console.log("[Receipt System] Target storage path: " + storagePath)
   
-  let receiptUrl = ""
+  let imageData = ""
   try {
-    const storageRef = ref(storage, storagePath)
-    const snapshot = await uploadBytes(storageRef, file)
-    receiptUrl = await getDownloadURL(snapshot.ref)
-    console.log("[Receipt System] File uploaded successfully to Storage. URL: " + receiptUrl)
-  } catch (storageError: any) {
-    console.error("[Receipt System] Firebase Storage upload failed.", storageError)
-    throw new Error("Storage upload failed: " + (storageError.message || storageError))
+    imageData = await fileToBase64(file)
+    console.log("[Receipt System] File converted to Base64 successfully.")
+  } catch (conversionError: any) {
+    console.error("[Receipt System] Base64 conversion failed.", conversionError)
+    throw new Error("Base64 conversion failed: " + (conversionError.message || conversionError))
   }
 
   const receiptId = crypto.randomUUID()
@@ -158,7 +160,7 @@ export async function uploadReceiptToFirebase(
     fileName: file.name,
     fileType: file.type,
     fileSize: file.size,
-    receiptUrl,
+    imageData,
     description,
     uploadedAt: Timestamp.now(),
     status: "pending"
@@ -208,7 +210,7 @@ export async function approvePendingReceipt(receipt: PendingReceipt) {
       fileName: receipt.fileName,
       fileType: receipt.fileType,
       fileSize: receipt.fileSize,
-      receiptUrl: receipt.receiptUrl,
+      imageData: receipt.imageData,
       description: receipt.description,
       uploadedAt: receipt.uploadedAt,
       uploadedViaLink: true,
@@ -229,7 +231,7 @@ export async function approvePendingReceipt(receipt: PendingReceipt) {
         fileSize: receipt.fileSize,
         description: receipt.description,
         uploadedAt: receipt.uploadedAt instanceof Timestamp ? receipt.uploadedAt.toDate().toISOString() : new Date().toISOString(),
-        fileData: receipt.receiptUrl,
+        fileData: receipt.imageData,
       }
       const existing = JSON.parse(localStorage.getItem("ctrlfund_receipts") || "[]")
       localStorage.setItem("ctrlfund_receipts", JSON.stringify([...existing, permanentReceipt]))

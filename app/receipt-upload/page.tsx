@@ -46,7 +46,7 @@ export default function ReceiptUploadPage() {
           fileSize: data.fileSize,
           description: data.description || "",
           uploadedAt: data.uploadedAt instanceof Timestamp ? data.uploadedAt.toDate().toISOString() : new Date().toISOString(),
-          fileData: data.receiptUrl,
+          fileData: data.imageData || data.receiptUrl || "",
         })
       })
 
@@ -438,7 +438,7 @@ match /pendingReceipts/{receiptId} {
               <div className="w-full flex justify-center bg-black/[0.02] border border-black/5 rounded-3xl overflow-hidden p-4 max-h-[350px]">
                 {previewReceipt.fileType.startsWith("image/") ? (
                   <img
-                    src={previewReceipt.receiptUrl}
+                    src={previewReceipt.imageData}
                     alt="Receipt preview"
                     className="max-w-full max-h-full object-contain rounded-2xl"
                   />
@@ -447,7 +447,7 @@ match /pendingReceipts/{receiptId} {
                     <FileText className="w-16 h-16 opacity-60 mb-2" />
                     <p className="text-xs font-bold">PDF Document</p>
                     <a
-                      href={previewReceipt.receiptUrl}
+                      href={previewReceipt.imageData}
                       download={previewReceipt.fileName}
                       className="text-xs text-blue-600 underline font-semibold mt-2"
                     >

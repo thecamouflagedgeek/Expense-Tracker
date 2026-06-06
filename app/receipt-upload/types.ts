@@ -15,7 +15,7 @@ export type PendingReceipt = {
   fileName: string
   fileType: string
   fileSize: number
-  receiptUrl: string
+  imageData: string
   description: string
   uploadedAt: Timestamp
   status: "pending" | "approved" | "rejected"
